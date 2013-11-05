@@ -27,7 +27,7 @@
 //#define	SSE2TEST
 
 #ifndef	ISSE
-#define	ISSE	0
+#define	ISSE	2
 #endif
 
 #define	FHANDLERS			9
@@ -88,9 +88,9 @@
 #include <sys/stat.h>
 #include <cstdarg>
 #include <cstdio>
-#include <VapourSynth.h>
-#include <VSHelper.h>
-#include <wchar.h>
+#include "VapourSynth.h"
+#include "VSHelper.h"
+#include <cwchar>
 
 #ifdef	STATISTICS
 unsigned	compare8;
@@ -116,7 +116,7 @@ void	debug_printf(const wchar_t *format, ...)
 	wchar_t	buffer[200];
 	va_list	args;
 	va_start(args, format);
-	vswprintf(buffer, format, args);
+	vswprintf(buffer, 200, format, args);
 	va_end(args);
 	OutputDebugString(buffer);	
 }
@@ -931,7 +931,7 @@ public:
 		linewidthSSE2 = linewidth;
 		hblocksSSE2 = hblocks / 2;
 		if( (remainderSSE2 = (hblocks & 1)) != 0 ) linewidthSSE2 -= MOTIONBLOCKWIDTH;
-		if( (hblocksSSE2 == 0) || (vblocks == 0) ) AVSenvironment->ThrowError("RemoveDirt: width or height of the clip too small");
+		if( (hblocksSSE2 == 0) || (vblocks == 0) ) vsapi->setError("RemoveDirt: width or height of the clip too small");
 		blockcompareSSE2 = SADcompareSSE2;
 #else
 		if( (hblocks == 0) || (vblocks == 0) ) vsapi->setError("RemoveDirt: width or height of the clip too small");
@@ -1802,131 +1802,8 @@ public:
 	}
 };
 
-class	AccessFrame
+/*class RemoveDirt : public Postprocessing
 {
-    int	uoffset, voffset;
-
-    int (__stdcall AccessFrame::*_GetPitchUV)(VideoFrame *frame);
-    const unsigned char* (__stdcall AccessFrame::*_GetReadPtrU)(VideoFrame *frame);
-    const unsigned char* (__stdcall AccessFrame::*_GetReadPtrV)(VideoFrame *frame);
-    unsigned char* (__stdcall AccessFrame::*_GetWritePtrU)(VideoFrame *frame);
-    unsigned char* (__stdcall AccessFrame::*_GetWritePtrV)(VideoFrame *frame);
-
-
-    int __stdcall YV12_GetPitchUV(VideoFrame *frame)
-    {
-        return	frame->GetPitch(PLANAR_U);
-    }
-
-    int __stdcall YUY2_GetPitchUV(VideoFrame *frame)
-    {
-        return	frame->GetPitch();	
-    }
-
-    const unsigned char *__stdcall YV12_GetReadPtrU(VideoFrame *frame)
-    {
-        return	frame->GetReadPtr(PLANAR_U);
-    }
-
-    const unsigned char *__stdcall YUY2_GetReadPtrU(VideoFrame *frame)
-    {
-        return	frame->GetReadPtr() + uoffset;
-    }
-
-    const unsigned char *__stdcall YV12_GetReadPtrV(VideoFrame *frame)
-    {
-        return	frame->GetReadPtr(PLANAR_V);
-    }
-
-    const unsigned char *__stdcall YUY2_GetReadPtrV(VideoFrame *frame)
-    {
-        return	frame->GetReadPtr() + voffset;
-    }
-
-    unsigned char *__stdcall YV12_GetWritePtrU(VideoFrame *frame)
-    {
-        return	frame->GetWritePtr(PLANAR_U);
-    }
-
-    unsigned char *__stdcall YUY2_GetWritePtrU(VideoFrame *frame)
-    {
-        return	frame->GetWritePtr() + uoffset;
-    }
-
-    unsigned char *__stdcall YV12_GetWritePtrV(VideoFrame *frame)
-    {
-        return	frame->GetWritePtr(PLANAR_V);
-    }
-
-    unsigned char *__stdcall YUY2_GetWritePtrV(VideoFrame *frame)
-    {
-        return	frame->GetWritePtr() + voffset;
-    }
-
-public:
-    inline int GetPitchY(PVideoFrame &frame)
-    {
-        return	frame->GetPitch();
-    }
-
-    inline int GetPitchUV(PVideoFrame &frame)
-    {
-        return	(this->*_GetPitchUV)(frame.operator ->());
-    }
-
-    inline const unsigned char * GetReadPtrY(PVideoFrame &frame)
-    {
-        return	frame->GetReadPtr();
-    }
-
-    inline const unsigned char * GetReadPtrU(PVideoFrame &frame)
-    {
-        return	(this->*_GetReadPtrU)(frame.operator ->());
-    }
-
-    inline const unsigned char * GetReadPtrV(PVideoFrame &frame)
-    {
-        return	(this->*_GetReadPtrV)(frame.operator ->());
-    }
-
-    inline unsigned char * GetWritePtrY(PVideoFrame &frame)
-    {
-        return	frame->GetWritePtr();
-    }
-
-    inline unsigned char * GetWritePtrU(PVideoFrame &frame)
-    {
-        return	(this->*_GetWritePtrU)(frame.operator ->());
-    }
-
-    inline unsigned char * GetWritePtrV(PVideoFrame &frame)
-    {
-        return	(this->*_GetWritePtrV)(frame.operator ->());
-    }
-
-    AccessFrame(int	width, bool yuy2)
-    {
-        _GetPitchUV = &AccessFrame::YV12_GetPitchUV;
-        _GetReadPtrU = &AccessFrame::YV12_GetReadPtrU;
-        _GetReadPtrV = &AccessFrame::YV12_GetReadPtrV;
-        _GetWritePtrU = &AccessFrame::YV12_GetWritePtrU;
-        _GetWritePtrV = &AccessFrame::YV12_GetWritePtrV;
-        if( yuy2 )
-        {
-            voffset = (uoffset = width) + width / 2;
-
-            _GetPitchUV = &AccessFrame::YUY2_GetPitchUV;
-            _GetReadPtrU = &AccessFrame::YUY2_GetReadPtrU;
-            _GetReadPtrV = &AccessFrame::YUY2_GetReadPtrV;
-            _GetWritePtrU = &AccessFrame::YUY2_GetWritePtrU;
-            _GetWritePtrV = &AccessFrame::YUY2_GetWritePtrV;
-        }
-    }
-};
-
-class RemoveDirt : public Postprocessing, public AccessFrame
-{
-	friend AVSValue InitRemoveDirt( class RestoreMotionBlocks *filter, AVSValue args);
 	int		blocks;
 	bool grey;
 
@@ -1938,7 +1815,6 @@ int	ProcessFrame(VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *prev
 	
 	RemoveDirt(int _width, int _height, int dist, int tolerance, int dmode, unsigned threshold, int noise, int noisy, bool yuy2, int pthreshold, int cthreshold, bool _grey, bool _show, bool debug, VSCore *core, const VSAPI *vsapi)	
 				: Postprocessing(_width, _height, dist, tolerance, dmode, threshold, noise, noisy, yuy2, pthreshold, cthreshold, core, vsapi)
-				, AccessFrame(_width, yuy2), grey(_grey), show(_show) 
 	{
 		blocks = debug ? (hblocks * vblocks) : 0;
 	}
@@ -1948,7 +1824,7 @@ int	RemoveDirt::ProcessFrame(VSFrameRef *dest, const VSFrameRef *src, const VSFr
 {
 		const unsigned char *nextY = vsapi->getReadPtr(next, 0);// GetReadPtrY(next);
 		int	nextPitchY = vsapi->getStride(next, 0); // GetPitchY(next);
-		markblocks(vsapi->getReadPtr(previous, 0)/*GetReadPtrY(previous)*/, vsapi->getStride(previous, 0) /*GetPitchY(previous)*/, nextY, nextPitchY);
+		markblocks(vsapi->getReadPtr(previous, 0), vsapi->getStride(previous, 0) , nextY, nextPitchY);
 		
 		unsigned char *destY = vsapi->getWritePtr(dest, 0); //GetWritePtrY(dest);
 		unsigned char *destU = vsapi->getWritePtr(dest, 1); //GetWritePtrU(dest);
@@ -1972,24 +1848,9 @@ int	RemoveDirt::ProcessFrame(VSFrameRef *dest, const VSFrameRef *src, const VSFr
 						, distblocks, (distblocks * 100)/(int)blocks, restored_blocks, (restored_blocks * 100)/blocks, loops); 
 
 		return restored_blocks + distblocks + motionblocks;
-}
+}*/
 
-#define	COMPARE_MASK	(~24)
-
-static	void CompareVideoInfo(VSVideoInfo *vi1, const VSVideoInfo *vi2, const char *progname, VSCore *core, const VSAPI *vsapi)
-{	
-	if( (vi1->width != vi2->width) || (vi1->height != vi2->height) || (!isSameFormat(vi1, vi2))
-	{
-#if	1
-		debug_printf(L"widths = %u, %u, heights = %u, %u, color spaces = %X, %X\n"
-						, vi1->width, vi2->width, vi1->height, vi2->height, vi1.pixel_type, vi2.pixel_type);
-#endif
-		vsapi->setError("%s: clips must be of equal type", progname);
-	}
-	if(vi1->numFrames > vi2->numFrames) vi1->numFrames = vi2->numFrames;
-}
-
-class	GenericVideoFilterCopy : public GenericVideoFilter
+/*class	GenericVideoFilterCopy : public GenericVideoFilter
 {
 	int		rowsize;
 	int		cwidth, cheight;
@@ -2057,412 +1918,5 @@ GenericVideoFilterCopy::GenericVideoFilterCopy(PClip clip, bool grey) : GenericV
 		_CopyChroma = &GenericVideoFilterCopy::CopyYUY2Chroma;
 		if( !grey ) rowsize *= 2;
 	}
-}
+}*/
 
-
-class	RestoreMotionBlocks : public GenericVideoFilterCopy
-{
-protected:
-	RemoveDirt rd;
-	int	mthreshold;
-
-	PClip	restore;
-	PClip	before;
-	PClip	after;
-	PClip	alternative;
-	int		lastframe;
-	int		before_offset, after_offset;
-
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env)
-	{
-		if( (n + before_offset < 0) || (n + after_offset > lastframe) ) return alternative->GetFrame(n, env);
-		PVideoFrame pf = before->GetFrame(n + before_offset, env);
-		PVideoFrame df = GetWritableChildFrame(n, env);
-		PVideoFrame rf = restore->GetFrame(n, env);
-		PVideoFrame nf = after->GetFrame(n + after_offset, env);
-		if( rd.ProcessFrame(df, rf, pf, nf, n) > mthreshold )
-			return alternative->GetFrame(n, env);
-		else return df;
-	}
-
-	enum	creatargs { SRC, RESTORE, AFTER, BEFORE, ALTERNATIVE, PLANAR, SHOW, DEBUG, GMTHRES, MTHRES, NOISE, NOISY, DIST, TOLERANCE, DMODE, PTHRES, CTHRES, GREY, REDUCEF};
-public:	
-	RestoreMotionBlocks(AVSValue args, IScriptEnvironment *env)
-		: GenericVideoFilterCopy(args[SRC].AsClip(), args[GREY].AsBool(false) && !args[SHOW].AsBool(false)), restore(args[RESTORE].AsClip())
-			, after(args[AFTER].Defined() ? args[AFTER].AsClip() : NULL)
-			, before(args[BEFORE].Defined() ? args[BEFORE].AsClip() : NULL)
-			, alternative(args[ALTERNATIVE].Defined() ? args[ALTERNATIVE].AsClip() : NULL)
-			, rd(vi.width, vi.height, args[DIST].AsInt(DEFAULT_DIST), args[TOLERANCE].AsInt(DEFAULT_TOLERANCE), args[DMODE].AsInt(0)
-					, args[MTHRES].AsInt(DEFAULT_MTHRESHOLD), args[NOISE].AsInt(0), args[NOISY].AsInt(-1), vi.IsYUY2()
-					, args[PTHRES].AsInt(DEFAULT_PTHRESHOLD), args[CTHRES].AsInt(DEFAULT_PTHRESHOLD)
-					, args[GREY].AsBool(false), args[SHOW].AsBool(false), args[DEBUG].AsBool(false), env)
-	{
-		mthreshold = (args[GMTHRES].AsInt(DEFAULT_GMTHRESHOLD) * rd.hblocks * rd.vblocks) / 100;
-		if( vi.IsRGB() || (vi.IsYV12() + args[PLANAR].AsBool(false) == 0) )
-			env->ThrowError("RemoveDirt: only YV12 and planar YUY2 clips are supported");
-		child->SetCacheHints(CACHE_NOTHING, 0);
-		restore->SetCacheHints(CACHE_RANGE, 0);
-		lastframe = vi.num_frames - 1;
-		before_offset = after_offset = 0; 
-		if( after == NULL )
-		{
-			after = restore;
-			goto set_before;
-		}
-		if( before != NULL )
-		{
-			after->SetCacheHints(CACHE_RANGE, 0);
-			before->SetCacheHints(CACHE_RANGE, 0);
-		}
-		else
-		{
-			set_before:
-			before_offset = -1;
-			after_offset = 1;
-			before = after;
-			after->SetCacheHints(CACHE_RANGE, 2);
-		}
-		if( alternative == NULL ) alternative = restore;
-		else alternative->SetCacheHints(CACHE_RANGE, 0);
-		CompareVideoInfo(vi, restore->GetVideoInfo(), "RemoveDirt", env);
-		CompareVideoInfo(vi, before->GetVideoInfo(), "RemoveDirt", env);
-		CompareVideoInfo(vi, after->GetVideoInfo(), "RemoveDirt", env);
-	}
-};
-
-void VS_CC CreateRestoreMotionBlocks(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
-{
-	return new RestoreMotionBlocks(args, env);
-}
-
-class	DupBlocks : public GenericVideoFilterCopy
-{
-protected:
-	RemoveDirt rd;
-	int	mthreshold;
-
-	int		lfnr;
-	PVideoFrame	lf;
-	
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env)
-	{
-		PVideoFrame rf = child->GetFrame(n, env);
-		if( n - 1 != lfnr )
-		{
-			if( n == 0 ) return rf;
-			lf = GetWritableChildFrame(n - 1, env);
-		}
-
-		if( rd.show ) CopyChroma(lf, rf, env);
-		
-		if( rd.ProcessFrame(lf, rf, lf, rf, n) > mthreshold ) return rf;
-		lfnr = n;
-		return CopyFrame(lf, env);
-	}
-
-	enum	creatargs { SRC, PLANAR, SHOW, DEBUG, GMTHRES, MTHRES, NOISE, NOISY, DIST, TOLERANCE, DMODE, PTHRES, CTHRES, GREY, REDUCEF};
-public:	
-	DupBlocks(AVSValue args, IScriptEnvironment *env)
-		: GenericVideoFilterCopy(args[SRC].AsClip(), args[GREY].AsBool(false)), lfnr(-2)
-			, rd(vi.width, vi.height, args[DIST].AsInt(DEFAULT_DIST), args[TOLERANCE].AsInt(DEFAULT_TOLERANCE), args[DMODE].AsInt(0)
-					, args[MTHRES].AsInt(100), args[NOISE].AsInt(0), args[NOISY].AsInt(-1), vi.IsYUY2()
-					, args[PTHRES].AsInt(DEFAULT_PTHRESHOLD), args[CTHRES].AsInt(DEFAULT_PTHRESHOLD)
-					, args[GREY].AsBool(false), args[SHOW].AsBool(false), args[DEBUG].AsBool(false), env)
-	{
-		mthreshold = (args[GMTHRES].AsInt(80) * rd.hblocks * rd.vblocks) / 100;
-		if( vi.IsRGB() || (vi.IsYV12() + args[PLANAR].AsBool(false) == 0) )
-			env->ThrowError("RemoveDirt: only YV12 and planar YUY2 clips are supported");
-		//child->SetCacheHints(CACHE_NOTHING, 0);
-	}
-};
-
-void VS_CC CreateDupBlocks(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
-{
-	return new DupBlocks(args, env);
-}
-
-#if		ISSE > 1
-#define	SSE_INCREMENT	16
-#define	SSE_MOVE		movdqu
-#if		ISSE > 2
-#define	SSE3_MOVE		lddqu
-#else
-#define	SSE3_MOVE		movdqu
-#endif
-#define	SSE_RMOVE		movdqa
-#define	SSE0			xmm0
-#define	SSE1			xmm1
-#define	SSE2			xmm2
-#define	SSE3			xmm3
-#define	SSE4			xmm4
-#define	SSE5			xmm5
-#define	SSE6			xmm6
-#define	SSE7			xmm7
-#define	SSE_EMMS	
-#else
-#define	SSE_INCREMENT	8
-#define	SSE_MOVE		movq
-#define	SSE3_MOVE		movq
-#define	SSE_RMOVE		movq
-#define	SSE0			mm0
-#define	SSE1			mm1
-#define	SSE2			mm2
-#define	SSE3			mm3
-#define	SSE4			mm4
-#define	SSE5			mm5
-#define	SSE6			mm6
-#define	SSE7			mm7
-#define	SSE_EMMS		__asm	emms
-#endif	// ISSE
-
-#if		ISSE > 1
-static	inline unsigned aligned_diff(const unsigned char *sp1, int spitch1, const unsigned char *sp2, int spitch2, int hblocks, int incpitch, int height)
-#else
-static	unsigned gdiff(const unsigned char *sp1, int spitch1, const unsigned char *sp2, int spitch2, int hblocks, int incpitch, int height)
-#endif
-{
-__asm	pxor		SSE0,				SSE0
-__asm	mov			eax,				incpitch
-__asm	mov			ebx,				spitch2
-__asm	mov			esi,				sp1
-__asm	add			ebx,				eax
-__asm	mov			edi,				sp2
-__asm	add			eax,				spitch1
-__asm	pxor		SSE1,				SSE1
-__asm	mov			edx,				height
-__asm	mov			ecx,				hblocks
-__asm	align		16
-__asm	_loop:
-__asm	SSE_RMOVE	SSE2,				[esi]	
-__asm	SSE_RMOVE	SSE3,				[esi + SSE_INCREMENT]
-__asm	psadbw		SSE2,				[edi]
-__asm	add			esi,				2*SSE_INCREMENT	
-__asm	psadbw		SSE3,				[edi + SSE_INCREMENT]
-__asm	paddd		SSE0,				SSE2
-__asm	add			edi,				2*SSE_INCREMENT
-__asm	paddd		SSE1,				SSE3
-__asm	loop		_loop
-__asm	add			esi,				eax
-__asm	add			edi,				ebx
-__asm	dec			edx
-__asm	mov			ecx,				hblocks
-__asm	jnz			_loop
-__asm	paddd		SSE0,				SSE1
-__asm	movd		eax,				SSE0
-}
-
-#if		ISSE > 1
-static	inline unsigned unaligned_diff(const unsigned char *sp1, int spitch1, const unsigned char *sp2, int spitch2, int hblocks, int incpitch, int height)
-{
-__asm	pxor		SSE0,				SSE0
-__asm	mov			eax,				incpitch
-__asm	mov			ebx,				spitch2
-__asm	mov			esi,				sp1
-__asm	add			ebx,				eax
-__asm	mov			edi,				sp2
-__asm	add			eax,				spitch1
-__asm	pxor		SSE1,				SSE1
-__asm	mov			edx,				height
-__asm	mov			ecx,				hblocks
-__asm	align		16
-__asm	_loop:
-__asm	SSE3_MOVE	SSE2,				[esi]	
-__asm	SSE3_MOVE	SSE3,				[esi + SSE_INCREMENT]
-__asm	add			esi,				2*SSE_INCREMENT	
-__asm	SSE3_MOVE	SSE4,				[edi]	
-__asm	SSE3_MOVE	SSE5,				[edi + SSE_INCREMENT]
-__asm	psadbw		SSE2,				SSE4
-__asm	add			edi,				2*SSE_INCREMENT
-__asm	psadbw		SSE3,				SSE5
-__asm	paddd		SSE0,				SSE2
-__asm	paddd		SSE1,				SSE3
-__asm	loop		_loop
-__asm	add			esi,				eax
-__asm	add			edi,				ebx
-__asm	dec			edx
-__asm	mov			ecx,				hblocks
-__asm	jnz			_loop
-__asm	paddd		SSE0,				SSE1
-__asm	movd		eax,				SSE0
-}
-
-static unsigned gdiff(const unsigned char *sp1, int spitch1, const unsigned char *sp2, int spitch2, int hblocks, int incpitch, int height)
-{
-	if( (((unsigned)sp1 & (SSE_INCREMENT - 1)) + ((unsigned)sp2 & (SSE_INCREMENT - 1)) ) == 0 ) 
-		 aligned_diff(sp1, spitch1, sp2, spitch2, hblocks, incpitch, height);
-	else unaligned_diff(sp1, spitch1, sp2, spitch2, hblocks, incpitch, height);
-	
-}
-#endif // ISSE > 1
-
-#define	SPOINTER(p)	p.operator->()
-
-typedef struct {
-    VSNodeRef *input;
-    VSNodeRef *sceneBegin;
-    VSNodeRef *sceneEnd;
-    VSNodeRef *globalMotion;
-    const VSVideoInfo *vi;
-    int dfactor;
-    int hblocks;
-    int incpitch;
-    unsigned int lastdiff;
-    unsigned int lnr;
-    double dirmult;
-} SCSelectData;
-
-static void VS_CC SCSelectFree(void *instanceData, VSCore *core, const VSAPI *vsapi)
-{
-    SCSelectData *d = (SCSelectData *)instanceData;
-    vsapi->freeNode(d->input);
-    vsapi->freeNode(d->sceneBegin);
-    vsapi->freeNode(d->sceneEnd);
-    vsapi->freeNode(d->globalMotion);
-    free(d);
-}
-
-static const VSFrameRef *VS_CC SCSelectGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi)
-{
-    SCSelectData *d = (SCSelectData *) *instanceData;
-
-    if (activationReason == arInitial) {
-        vsapi->requestFrameFilter(n, d->input, frameCtx);
-        vsapi->requestFrameFilter(n, d->sceneBegin, frameCtx);
-        vsapi->requestFrameFilter(n, d->sceneEnd, frameCtx);
-        vsapi->requestFrameFilter(n, d->globalMotion, frameCtx);
-    } else if (activationReason == arAllFramesReady) {
-        const VSFrameRef *input_frame = vsapi->getFrameFilter(n, d->input, frameCtx);
-        const VSFrameRef *sceneBegin_frame = vsapi->getFrameFilter(n, d->sceneBegin, frameCtx);
-        const VSFrameRef *sceneEnd_frame = vsapi->getFrameFilter(n, d->sceneEnd, frameCtx);
-        const VSFrameRef *globalMotion_frame = vsapi->getFrameFilter(n, d->globalMotion, frameCtx);
-
-        VSNodeRef *selected;
-
-        if (n == 0) {
-set_begin:
-            selected = d->sceneBegin;
-        } else if (n >= d->vi->numFrames) {
-set_end:
-            selected = d->sceneEnd;
-        } else {
-            const VSFrameRef *sf = vsapi->getFrameFilter(n, d->input, frameCtx);
-
-            if (d->lnr != n - 1) {
-                const VSFrameRef *pf = vsapi->getFrameFilter(n - 1, d->input, frameCtx);
-                d->lastdiff = gdiff(vsapi->getReadPtr(sf, 0), vsapi->getStride(sf, 0),
-                                    vsapi->getReadPtr(pf, 0), vsapi->getStride(pf, 0),
-                                    d->hblocks, d->incpitch, d->vi->height);
-            }
-            int olddiff = d->lastdiff;
-            {
-                const VSFrameRef *nf = vsapi->getFrameFilter(n + 1, d->input, frameCtx);
-                d->lastdiff  = gdiff(vsapi->getReadPtr(sf, 0), vsapi->getStride(sf, 0),
-                                     vsapi->getReadPtr(nf, 0), vsapi->getStride(nf, 0),
-                                     d->hblocks, d->incpitch, d->vi->height);
-                d->lnr = n;
-            }
-            SSE_EMMS
-            if(d->dirmult * olddiff < d->lastdiff ) {
-                goto set_end;
-            }
-            if(d->dirmult * d->lastdiff < olddiff ) {
-                goto set_begin;
-            }
-            selected = d->globalMotion;
-        }
-        return vsapi->getFrameFilter(n, selected, frameCtx);
-    }
-
-    return 0;
-}
-
-static void VS_CC SCSelectInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi)
-{
-    SCSelectData *d = (SCSelectData *) * instanceData;
-    vsapi->setVideoInfo(d->vi, 1, node);
-}
-
-void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
-{
-    SCSelectData d;
-
-    d.input = vsapi->propGetNode(in, "input", 0, 0);
-    d.vi = vsapi->getVideoInfo(d.input);
-
-    if (!isConstantFormat(d.vi)) {
-        vsapi->freeNode(d.input);
-        vsapi->setError(out, "SCSelect: Only constant format input supported");
-        return;
-    }
-
-    if (d.vi->format->id != pfCompatYUY2 || d.vi->format->id != pfYUV420P8) {
-        vsapi->freeNode(d.input);
-        vsapi->setError(out, "SCSelect: Only YV12 and YUY2 colorspaces are supported");
-        return;
-    }
-
-    d.sceneBegin = vsapi->propGetNode(in, "sceneBegin", 0, 0);
-    d.sceneEnd = vsapi->propGetNode(in, "sceneEnd", 0, 0);
-    d.globalMotion = vsapi->propGetNode(in, "globalMotion", 0, 0);
-
-    if (!isSameFormat(d.vi, vsapi->getVideoInfo(d.sceneBegin)) ||
-        !isSameFormat(d.vi, vsapi->getVideoInfo(d.sceneEnd)) ||
-        !isSameFormat(d.vi, vsapi->getVideoInfo(d.globalMotion))) {
-        vsapi->freeNode(d.input);
-        vsapi->freeNode(d.sceneBegin);
-        vsapi->freeNode(d.sceneEnd);
-        vsapi->freeNode(d.globalMotion);
-        vsapi->setError(out, "SCSelect: Clips are not of equal type");
-        return;
-    }
-
-    int err;
-    double dFactor = vsapi->propGetFloat(in, "dfactor", 0, &err);
-    if (err) {
-        dFactor = 4.0;
-    }
-
-    d.hblocks = d.vi->width / (2 * SSE_INCREMENT);
-    d.incpitch = d.hblocks * (-2 * SSE_INCREMENT);
-
-    SCSelectData *data = (SCSelectData *)malloc(sizeof(d));
-    *data = d;
-
-    vsapi->createFilter(in, out, "SCSelect", SCSelectInit, SCSelectGetFrame, SCSelectFree, fmParallel, 0, data, core);
-};
-
-VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin) {
-{
-    configFunc("com.fakeurl.vsremovedirt", "vsrd", "RemoveDirt VapourSynth Port", VAPOURSYNTH_API_VERSION, 1, plugin);
-    registerFunc("SCSelect", "input:clip;"\
-                             "sceneBegin:clip"\
-                             "sceneEnd:clip"\
-                             "globalMotion:clip"\
-                             "dfactor:float:opt", SCSelectCreate, 0, plugin);
-    registerFunc("RestoreMotionBlocks", "filtered:clip"\
-                                        "restore:clip"\
-                                        "neighbour:clip:opt"\
-                                        "neighbour2:clip:opt"\
-                                        "alternative:clip:opt"\
-                                        "gmthreshold:int:opt"\
-                                        "mthreshold:int:opt"\
-                                        "noise:int:opt"\
-                                        "noisy:int:opt"\
-                                        "dist:int:opt"\
-                                        "tolerance:int:opt"\
-                                        "dmode:int:opt"\
-                                        "pthreshold:int:opt"\
-                                        "cthreshold:int:opt"\
-                                        "grey:int:opt", CreateRestoreMotionBlocks, 0, plugin);
-    registerFunc("DupBlocks", "input:clip"\
-                              "gmthreshold:int:opt"\
-                              "mthreshold:int:opt"\
-                              "noise:int:opt"\
-                              "noisy:int:opt"\
-                              "dist:int:opt"\
-                              "tolerance:int:opt"\
-                              "dmode:int:opt"\
-                              "pthreshold:int:opt"\
-                              "cthreshold:int:opt"\
-                              "grey:int:opt", CreateDupBlocks, 0, plugin);
-}
