@@ -86,7 +86,153 @@ void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *v
     }
 }
 
-int RemoveDirtProcessFrame(RemoveDirt *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int frame, const VSAPI *vsapi)
+void FillMotionDetection(const VSMap *in, const VSAPI *vsapi, MotionDetectionData *md, const VSVideoInfo *vi)
+{
+    md = (MotionDetectionData *)malloc(sizeof(MotionDetectionData));
+    
+    int err;    
+    int noise = vsapi->propGetInt(in, "noise", 0, &err);
+    if (err) {
+        noise = 0;
+    }
+
+    int noisy = vsapi->propGetInt(in, "noisy", 0, &err);
+    if (err) {
+        noisy = -1;
+    }
+
+    int width = vi->width;
+    int height = vi->height;
+
+    md->hblocks = (md->linewidth = width) / MOTIONBLOCKWIDTH;
+    md->vblocks = height / MOTIONBLOCKHEIGHT;
+
+    linewidthSSE2 = md->linewidth;
+    hblocksSSE2 = md->hblocks / 2;
+    if( (remainderSSE2 = (md->hblocks & 1)) != 0 ) linewidthSSE2 -= MOTIONBLOCKWIDTH;
+    if( (hblocksSSE2 == 0) || (md->vblocks == 0) ) vsapi->setError("RemoveDirt: width or height of the clip too small");
+    blockcompareSSE2 = SADcompareSSE2;
+    blockcompare = SADcompare;
+
+    if(noise > 0)
+    {
+        blockcompareSSE2 = NSADcompareSSE2;
+        blockcompare = NSADcompare;
+        memset(md->noiselevel, noise, SSESIZE);
+        if(noisy >= 0)
+        {
+            blockcompareSSE2 = ExcessPixelsSSE2;
+            blockcompare = ExcessPixels;
+            md->threshold = noisy;
+        }
+    }
+    int size;
+    md->blockproperties_addr = new unsigned char[size = (md->nline = md->hblocks + 1) * (md->vblocks + 2)];
+    md->blockproperties = md->blockproperties_addr  + md->nline;
+    md->pline = -md->nline;
+    memset(md->blockproperties_addr, BMARGIN, size);
+}
+
+void FillMotionDetectionDist(const VSMap *in, const VSAPI *vsapi, MotionDetectionDistData *mdd, const VSVideoInfo *vi)
+{
+    mdd = (MotionDetectionDistData *)malloc(sizeof(MotionDetectionDistData));
+
+    FillMotionDetection(in, vsapi, &mdd->md, vi);
+
+    int err;
+    uint32_t dmode = vsapi->propGetInt(in, "dmode", 0, &err);
+    if (err) {
+        dmode = 0;
+    }
+
+    uint32_t tolerance = vsapi->propGetInt(in, "", 0, &err);
+    if (err) {
+        tolerance = 12;
+    }
+
+    int dist = vsapi->propGetInt(in, "dist", 0, &err);
+    if (err) {
+        dist = 1;
+    }
+
+    mdd->blocks = mdd->md.hblocks * mdd->md.vblocks;
+    mdd->isum = new unsigned[mdd->blocks];
+    
+    if(dmode >= 3) {
+        dmode = 0;
+    }
+
+    if(tolerance > 100) {
+        tolerance = 100;
+    } else if(tolerance == 0) {
+        if(dmode == 2) {
+            dist = 0;
+        }
+        dmode = 0;
+    }
+
+    processneighbours = neighbourproc[dmode];
+
+    mdd->dist = dist;
+    mdd->dist1 = mdd->dist + 1;
+    mdd->dist2 = mdd->dist1 + 1;
+
+    mdd->isumline = mdd->md.hblocks * sizeof(uint32_t);
+    uint32_t d = mdd->dist1 + mdd->dist;
+    tolerance = (d * d * tolerance * MOTION_FLAG1) / 100;
+    mdd->hinterior = mdd->md.hblocks - d;
+    mdd->vinterior = mdd->md.vblocks - d;
+    mdd->colinc = 1 - (mdd->md.vblocks * mdd->md.nline);
+    mdd->isuminc1 = (1 - (mdd->vinterior + dist) * mdd->md.hblocks) * sizeof(uint32_t);
+    mdd->isuminc2 = (1 - mdd->md.vblocks * mdd->md.hblocks) * sizeof(uint32_t);
+}
+
+void FillPostProcessing(const VSMap *in, const VSAPI *vsapi, PostProcessingData *pp, const VSVideoInfo *vi)
+{
+    pp = (PostProcessingData *)malloc(sizeof(PostProcessingData));
+
+    int err;
+    pp->pthreshold = vsapi->propGetInt(in, "pthreshold", 0, &err);
+    if (err) {
+        pp->pthreshold = 10;
+    }
+
+    pp->cthreshold = vsapi->propGetInt(in, "cthreshold", 0, &err);
+    if (err) {
+        pp->cthreshold = 10;
+    }
+
+    FillMotionDetectionDist(in, vsapi, &pp->mdd, vi);
+
+    pp->linewidthUV = pp->mdd.md.linewidth / 2;
+    pp->chromaheight = MOTIONBLOCKHEIGHT / 2;
+
+    if(vi->format->id == pfYUV422P8)
+    {
+        pp->chromaheight *= 2;
+    }
+    pp->chromaheightm = pp->chromaheight - 1;
+}
+
+void FillRemoveDirt(const VSMap *in, const VSAPI *vsapi, RemoveDirtData *rd, const VSVideoInfo *vi)
+{
+    rd = (RemoveDirtData *)malloc(sizeof(RemoveDirtData));
+
+    int err;
+    rd->grey = vsapi->propGetInt(in, "grey", 0, &err);
+    if (err) {
+        rd->grey = false;
+    }
+
+    rd->show = vsapi->propGetInt(in, "show", 0, &err);
+    if (err) {
+        rd->show = false;
+    }
+
+    FillPostProcessing(in, vsapi, &rd->postProcessing, vi);
+}
+
+int RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int frame, const VSAPI *vsapi)
 {
     const unsigned char *nextY = vsapi->getReadPtr(next, 0);
     int nextPitchY = vsapi->getStride(next, 0);

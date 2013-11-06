@@ -1802,7 +1802,7 @@ public:
 	}
 };
 
-/*class RemoveDirt : public Postprocessing
+class RemoveDirt : public Postprocessing
 {
 	int		blocks;
 	bool grey;
@@ -1844,11 +1844,8 @@ int	RemoveDirt::ProcessFrame(VSFrameRef *dest, const VSFrameRef *src, const VSFr
 
 		__asm	emms
 
-		if( blocks ) debug_printf(L"[%u] RemoveDirt: motion blocks = %4u(%2u%%), %4i(%2i%%), %4u(%2u%%), loops = %u\n", frame, motionblocks, (motionblocks * 100)/blocks
-						, distblocks, (distblocks * 100)/(int)blocks, restored_blocks, (restored_blocks * 100)/blocks, loops); 
-
 		return restored_blocks + distblocks + motionblocks;
-}*/
+}
 
 /*class	GenericVideoFilterCopy : public GenericVideoFilter
 {

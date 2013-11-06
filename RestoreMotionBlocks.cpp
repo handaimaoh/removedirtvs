@@ -1,7 +1,7 @@
 #include "shared.h"
 
 typedef struct {
-    VSNodeRef *source;
+    VSNodeRef *input;
     VSNodeRef *restore;
     VSNodeRef *before;
     VSNodeRef *after;
@@ -11,13 +11,13 @@ typedef struct {
     int lastframe;
     int before_offset;
     int after_offset;
-    RemoveDirt rd;
-} RestoreMotionBlocks;
+    RemoveDirtData rd;
+} RestoreMotionBlocksData;
 
 static void VS_CC RestoreMotionBlocksFree(void *instanceData, VSCore *core, const VSAPI *vsapi)
 {
-    RestoreMotionBlocks *d = (RestoreMotionBlocks *)instanceData;
-    vsapi->freeNode(d->source);
+    RestoreMotionBlocksData *d = (RestoreMotionBlocksData *)instanceData;
+    vsapi->freeNode(d->input);
     vsapi->freeNode(d->restore);
     vsapi->freeNode(d->before);
     vsapi->freeNode(d->after);
@@ -27,10 +27,10 @@ static void VS_CC RestoreMotionBlocksFree(void *instanceData, VSCore *core, cons
 
 static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi)
 {
-    RestoreMotionBlocks *d = (RestoreMotionBlocks *) *instanceData;
+    RestoreMotionBlocksData *d = (RestoreMotionBlocksData *) *instanceData;
 
     if (activationReason == arInitial) {
-        vsapi->requestFrameFilter(n, d->source, frameCtx);
+        vsapi->requestFrameFilter(n, d->input, frameCtx);
         vsapi->requestFrameFilter(n, d->restore, frameCtx);
         vsapi->requestFrameFilter(n, d->before, frameCtx);
         vsapi->requestFrameFilter(n, d->after, frameCtx);
@@ -41,12 +41,12 @@ static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int n, int activation
         }
 
         const VSFrameRef *pf = vsapi->getFrameFilter(n + d->before_offset, d->before, frameCtx);
-        const VSFrameRef *df = vsapi->getFrameFilter(n, d->source, frameCtx);
-        const VSFrameRef *df_copy = vsapi->copyFrame(df, core);
+        const VSFrameRef *df = vsapi->getFrameFilter(n, d->input, frameCtx);
+        VSFrameRef *df_copy = vsapi->copyFrame(df, core);
         const VSFrameRef *rf = vsapi->getFrameFilter(n, d->restore, frameCtx);
         const VSFrameRef *nf = vsapi->getFrameFilter(n + d->after_offset, d->after, frameCtx);
 
-        if(rd.ProcessFrame(df_copy, rf, pf, nf, n) > d->mthreshold) {
+        if(RemoveDirtProcessFrame(&d->rd, df_copy, rf, pf, nf, n, vsapi) > d->mthreshold) {
             vsapi->freeFrame(pf);
             vsapi->freeFrame(df);
             vsapi->freeFrame(rf);
@@ -67,19 +67,19 @@ static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int n, int activation
 
 static void VS_CC RestoreMotionBlocksInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi)
 {
-    RestoreMotionBlocks *d = (RestoreMotionBlocks *) *instanceData;
+    RestoreMotionBlocksData *d = (RestoreMotionBlocksData *) *instanceData;
     vsapi->setVideoInfo(d->vi, 1, node);
 }
 
 void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
 {
-    RestoreMotionBlocks d;
+    RestoreMotionBlocksData d;
 
-    d.source = vsapi->propGetNode(in, "input", 0, 0);
-    d.vi = vsapi->getVideoInfo(d.source);
+    d.input = vsapi->propGetNode(in, "input", 0, 0);
+    d.vi = vsapi->getVideoInfo(d.input);
 
     if (!isConstantFormat(d.vi)) {
-        vsapi->freeNode(d.source);
+        vsapi->freeNode(d.input);
         vsapi->setError(out, "SCSelect: Only constant format input supported");
         return;
     }
@@ -133,7 +133,7 @@ set_before:
     if (!isSameFormat(d.vi, vsapi->getVideoInfo(d.restore)) ||
         !isSameFormat(d.vi, vsapi->getVideoInfo(d.before)) ||
         !isSameFormat(d.vi, vsapi->getVideoInfo(d.after))) {
-            vsapi->freeNode(d.source);
+            vsapi->freeNode(d.input);
             vsapi->freeNode(d.restore);
             vsapi->freeNode(d.before);
             vsapi->freeNode(d.after);
@@ -142,7 +142,9 @@ set_before:
             return;
     }
 
-    RestoreMotionBlocks *data = (RestoreMotionBlocks *)malloc(sizeof(d));
+    FillRemoveDirt(in, vsapi, &d.rd);
+
+    RestoreMotionBlocksData *data = (RestoreMotionBlocksData *)malloc(sizeof(d));
     *data = d;
 
     vsapi->createFilter(in, out, "RestoreMotionBlocks", RestoreMotionBlocksInit, RestoreMotionBlocksGetFrame, RestoreMotionBlocksFree, fmParallel, 0, data, core);

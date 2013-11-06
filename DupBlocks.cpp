@@ -3,15 +3,15 @@
 typedef struct {
     VSNodeRef *input;
     VSFrameRef *lf;
-    VSVideoInfo *vi;
+    const VSVideoInfo *vi;
     int mthreshold;
     int lfnr;
-    RemoveDirt rd;
-} DupBlocks;
+    RemoveDirtData rd;
+} DupBlocksData;
 
 static void VS_CC DupBlocksFree(void *instanceData, VSCore *core, const VSAPI *vsapi)
 {
-    DupBlocks *d = (DupBlocks *)instanceData;
+    DupBlocksData *d = (DupBlocksData *)instanceData;
     vsapi->freeNode(d->input);
     vsapi->freeFrame(d->lf);
     free(d);
@@ -19,7 +19,7 @@ static void VS_CC DupBlocksFree(void *instanceData, VSCore *core, const VSAPI *v
 
 static const VSFrameRef *VS_CC DupBlocksGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi)
 {
-    DupBlocks *d = (DupBlocks *) *instanceData;
+    DupBlocksData *d = (DupBlocksData *) *instanceData;
 
     if (activationReason == arInitial) {
         vsapi->requestFrameFilter(n, d->input, frameCtx);
@@ -41,6 +41,7 @@ static const VSFrameRef *VS_CC DupBlocksGetFrame(int n, int activationReason, vo
             return rf;
         }
 
+        vsapi->freeFrame(rf);
         d->lfnr = n;
         return vsapi->copyFrame(d->lf, core);
     }
@@ -50,15 +51,23 @@ static const VSFrameRef *VS_CC DupBlocksGetFrame(int n, int activationReason, vo
 
 static void VS_CC DupBlocksInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi)
 {
-    DupBlocks *d = (DupBlocks *) *instanceData;
+    DupBlocksData *d = (DupBlocksData *) *instanceData;
     vsapi->setVideoInfo(d->vi, 1, node);
 }
 
 void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
 {
-    DupBlocks d;
+    DupBlocksData d;
 
     d.input = vsapi->propGetNode(in, "input", 0, 0);
+    d.vi = vsapi->getVideoInfo(d.input);
+
+    if (d.vi->format->id != pfYUV420P8 || d.vi->format->id != pfYUV422P8) {
+        vsapi->freeNode(d.input);
+        vsapi->setError(out, "SCSelect: Only planar YV12 and YUY2 colorspaces are supported");
+        return;
+    }
+
     d.lfnr = -2;
 
     int err;
@@ -68,13 +77,9 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
     }
     d.mthreshold = (d.mthreshold * d.rd.hblocks * d.rd.vblocks) / 100;
 
-    if (d.vi->format->id != pfYUV420P8 || d.vi->format->id != pfYUV422P8) {
-        vsapi->freeNode(d.input);
-        vsapi->setError(out, "SCSelect: Only planar YV12 and YUY2 colorspaces are supported");
-        return;
-    }
+    FillRemoveDirt(in, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
 
-    DupBlocks *data = (DupBlocks *)malloc(sizeof(d));
+    DupBlocksData *data = (DupBlocksData *)malloc(sizeof(d));
     *data = d;
 
     vsapi->createFilter(in, out, "DupBlocks", DupBlocksInit, DupBlocksGetFrame, DupBlocksFree, fmParallel, 0, data, core);
@@ -83,7 +88,7 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
 class	DupBlocks : public GenericVideoFilterCopy
 {
 protected:
-    RemoveDirt rd;
+    RemoveDirtData rd;
     int	mthreshold;
 
     int		lfnr;
