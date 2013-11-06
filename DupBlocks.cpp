@@ -77,7 +77,7 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
     }
     d.mthreshold = (d.mthreshold * d.rd.hblocks * d.rd.vblocks) / 100;
 
-    FillRemoveDirt(in, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
+    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
 
     DupBlocksData *data = (DupBlocksData *)malloc(sizeof(d));
     *data = d;

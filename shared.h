@@ -73,7 +73,7 @@ typedef struct {
 typedef struct {
     bool grey;
     bool show;
-    PostProcessingData postProcessing;
+    PostProcessingData pp;
 } RemoveDirtData;
 
 void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
@@ -83,4 +83,4 @@ void VS_CC CreateDupBlocks(const VSMap *in, VSMap *out, void *userData, VSCore *
 unsigned gdiff(const unsigned char *sp1, int spitch1, const unsigned char *sp2, int spitch2, int hblocks, int incpitch, int height);
 void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *vi, const VSAPI *vsapi);
 int RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int frame, const VSAPI *vsapi);
-void FillRemoveDirt(const VSMap *in, const VSAPI *vsapi, RemoveDirtData *rd, const VSVideoInfo *vi);
+void FillRemoveDirt(const VSMap *in, VSMap *out, const VSAPI *vsapi, RemoveDirtData *rd, const VSVideoInfo *vi);

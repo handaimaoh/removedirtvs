@@ -86,7 +86,7 @@ void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *v
     }
 }
 
-void FillMotionDetection(const VSMap *in, const VSAPI *vsapi, MotionDetectionData *md, const VSVideoInfo *vi)
+void FillMotionDetection(const VSMap *in, VSMap *out, const VSAPI *vsapi, MotionDetectionData *md, const VSVideoInfo *vi)
 {
     md = (MotionDetectionData *)malloc(sizeof(MotionDetectionData));
     
@@ -110,7 +110,7 @@ void FillMotionDetection(const VSMap *in, const VSAPI *vsapi, MotionDetectionDat
     linewidthSSE2 = md->linewidth;
     hblocksSSE2 = md->hblocks / 2;
     if( (remainderSSE2 = (md->hblocks & 1)) != 0 ) linewidthSSE2 -= MOTIONBLOCKWIDTH;
-    if( (hblocksSSE2 == 0) || (md->vblocks == 0) ) vsapi->setError("RemoveDirt: width or height of the clip too small");
+    if( (hblocksSSE2 == 0) || (md->vblocks == 0) ) vsapi->setError(out, "RemoveDirt: width or height of the clip too small");
     blockcompareSSE2 = SADcompareSSE2;
     blockcompare = SADcompare;
 
@@ -133,11 +133,11 @@ void FillMotionDetection(const VSMap *in, const VSAPI *vsapi, MotionDetectionDat
     memset(md->blockproperties_addr, BMARGIN, size);
 }
 
-void FillMotionDetectionDist(const VSMap *in, const VSAPI *vsapi, MotionDetectionDistData *mdd, const VSVideoInfo *vi)
+void FillMotionDetectionDist(const VSMap *in, VSMap *out, const VSAPI *vsapi, MotionDetectionDistData *mdd, const VSVideoInfo *vi)
 {
     mdd = (MotionDetectionDistData *)malloc(sizeof(MotionDetectionDistData));
 
-    FillMotionDetection(in, vsapi, &mdd->md, vi);
+    FillMotionDetection(in, out, vsapi, &mdd->md, vi);
 
     int err;
     uint32_t dmode = vsapi->propGetInt(in, "dmode", 0, &err);
@@ -187,7 +187,7 @@ void FillMotionDetectionDist(const VSMap *in, const VSAPI *vsapi, MotionDetectio
     mdd->isuminc2 = (1 - mdd->md.vblocks * mdd->md.hblocks) * sizeof(uint32_t);
 }
 
-void FillPostProcessing(const VSMap *in, const VSAPI *vsapi, PostProcessingData *pp, const VSVideoInfo *vi)
+void FillPostProcessing(const VSMap *in, VSMap *out, const VSAPI *vsapi, PostProcessingData *pp, const VSVideoInfo *vi)
 {
     pp = (PostProcessingData *)malloc(sizeof(PostProcessingData));
 
@@ -202,7 +202,7 @@ void FillPostProcessing(const VSMap *in, const VSAPI *vsapi, PostProcessingData 
         pp->cthreshold = 10;
     }
 
-    FillMotionDetectionDist(in, vsapi, &pp->mdd, vi);
+    FillMotionDetectionDist(in, out, vsapi, &pp->mdd, vi);
 
     pp->linewidthUV = pp->mdd.md.linewidth / 2;
     pp->chromaheight = MOTIONBLOCKHEIGHT / 2;
@@ -214,7 +214,7 @@ void FillPostProcessing(const VSMap *in, const VSAPI *vsapi, PostProcessingData 
     pp->chromaheightm = pp->chromaheight - 1;
 }
 
-void FillRemoveDirt(const VSMap *in, const VSAPI *vsapi, RemoveDirtData *rd, const VSVideoInfo *vi)
+void FillRemoveDirt(const VSMap *in, VSMap *out, const VSAPI *vsapi, RemoveDirtData *rd, const VSVideoInfo *vi)
 {
     rd = (RemoveDirtData *)malloc(sizeof(RemoveDirtData));
 
@@ -229,7 +229,7 @@ void FillRemoveDirt(const VSMap *in, const VSAPI *vsapi, RemoveDirtData *rd, con
         rd->show = false;
     }
 
-    FillPostProcessing(in, vsapi, &rd->postProcessing, vi);
+    FillPostProcessing(in, out, vsapi, &rd->pp, vi);
 }
 
 int RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int frame, const VSAPI *vsapi)
@@ -260,7 +260,7 @@ int RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRe
     }
     __asm emms
 
-    return restored_blocks + distblocks + motionblocks;
+    return rd->pp.restored_blocks + rd->pp.mdd.distblocks + rd->pp.mdd.md.motionblocks;
 }
 
 VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin)
