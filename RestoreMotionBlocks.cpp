@@ -22,6 +22,10 @@ static void VS_CC RestoreMotionBlocksFree(void *instanceData, VSCore *core, cons
     vsapi->freeNode(d->before);
     vsapi->freeNode(d->after);
     vsapi->freeNode(d->alternative);
+    free(&d->rd.pp.mdd.md);
+    free(&d->rd.pp.mdd);
+    free(&d->rd.pp);
+    free(&d->rd);
     free(d);
 }
 
@@ -73,7 +77,9 @@ static void VS_CC RestoreMotionBlocksInit(VSMap *in, VSMap *out, void **instance
 
 void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
 {
-    RestoreMotionBlocksData d;
+    RestoreMotionBlocksData d = { 0 };
+
+    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
 
     d.input = vsapi->propGetNode(in, "input", 0, 0);
     d.vi = vsapi->getVideoInfo(d.input);
@@ -108,7 +114,7 @@ void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData
         d.alternative = 0;
     }
 
-    d.mthreshold = vsapi->propGetInt(in, "gmthreshold", 0, &err);
+    d.mthreshold = (int32_t) vsapi->propGetInt(in, "gmthreshold", 0, &err);
     if (err) {
         d.mthreshold = 80;
     }
@@ -142,52 +148,8 @@ set_before:
             return;
     }
 
-    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
-
     RestoreMotionBlocksData *data = (RestoreMotionBlocksData *)malloc(sizeof(d));
     *data = d;
 
     vsapi->createFilter(in, out, "RestoreMotionBlocks", RestoreMotionBlocksInit, RestoreMotionBlocksGetFrame, RestoreMotionBlocksFree, fmParallel, 0, data, core);
 }
-
-/*RestoreMotionBlocks(AVSValue args, IScriptEnvironment *env)
-                : GenericVideoFilterCopy(args[SRC].AsClip(), args[GREY].AsBool(false) && !args[SHOW].AsBool(false)), restore(args[RESTORE].AsClip())
-                        , after(args[AFTER].Defined() ? args[AFTER].AsClip() : NULL)
-                        , before(args[BEFORE].Defined() ? args[BEFORE].AsClip() : NULL)
-                        , alternative(args[ALTERNATIVE].Defined() ? args[ALTERNATIVE].AsClip() : NULL)
-                        , rd(vi.width, vi.height, args[DIST].AsInt(DEFAULT_DIST), args[TOLERANCE].AsInt(DEFAULT_TOLERANCE), args[DMODE].AsInt(0)
-                                        , args[MTHRES].AsInt(DEFAULT_MTHRESHOLD), args[NOISE].AsInt(0), args[NOISY].AsInt(-1), vi.IsYUY2()
-                                        , args[PTHRES].AsInt(DEFAULT_PTHRESHOLD), args[CTHRES].AsInt(DEFAULT_PTHRESHOLD)
-                                        , args[GREY].AsBool(false), args[SHOW].AsBool(false), args[DEBUG].AsBool(false), env)
-        {
-                mthreshold = (args[GMTHRES].AsInt(DEFAULT_GMTHRESHOLD) * rd.hblocks * rd.vblocks) / 100;
-                if( vi.IsRGB() || (vi.IsYV12() + args[PLANAR].AsBool(false) == 0) )
-                        env->ThrowError("RemoveDirt: only YV12 and planar YUY2 clips are supported");
-                child->SetCacheHints(CACHE_NOTHING, 0);
-                restore->SetCacheHints(CACHE_RANGE, 0);
-                lastframe = vi.num_frames - 1;
-                before_offset = after_offset = 0; 
-                if( after == NULL )
-                {
-                        after = restore;
-                        goto set_before;
-                }
-                if( before != NULL )
-                {
-                        after->SetCacheHints(CACHE_RANGE, 0);
-                        before->SetCacheHints(CACHE_RANGE, 0);
-                }
-                else
-                {
-                        set_before:
-                        before_offset = -1;
-                        after_offset = 1;
-                        before = after;
-                        after->SetCacheHints(CACHE_RANGE, 2);
-                }
-                if( alternative == NULL ) alternative = restore;
-                else alternative->SetCacheHints(CACHE_RANGE, 0);
-                CompareVideoInfo(vi, restore->GetVideoInfo(), "RemoveDirt", env);
-                CompareVideoInfo(vi, before->GetVideoInfo(), "RemoveDirt", env);
-                CompareVideoInfo(vi, after->GetVideoInfo(), "RemoveDirt", env);
-        }/*

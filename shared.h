@@ -1,36 +1,8 @@
 #include "VapourSynth.h"
 #include "VSHelper.h"
 
-#define MOTIONBLOCKWIDTH    8
-#define MOTIONBLOCKHEIGHT   8
-
-#define MOTION_FLAG     1
-#define MOTION_FLAGN    2
-#define MOTION_FLAGP    4
-#define TO_CLEAN        8
-#define BMARGIN         16
-#define MOTION_FLAG1    (MOTION_FLAG | TO_CLEAN)
-#define MOTION_FLAG2    (MOTION_FLAGN | TO_CLEAN)
-#define MOTION_FLAG3    (MOTION_FLAGP | TO_CLEAN)
-#define MOTION_FLAGS    (MOTION_FLAG | MOTION_FLAGN | MOTION_FLAGP)
-
-#define SSESIZE         16
-#define SSE_INCREMENT   16
-#define SSE_MOVE        movdqu
-#define SSE3_MOVE       movdqu
-#define SSE_RMOVE       movdqa
-#define SSE0            xmm0
-#define SSE1            xmm1
-#define SSE2            xmm2
-#define SSE3            xmm3
-#define SSE4            xmm4
-#define SSE5            xmm5
-#define SSE6            xmm6
-#define SSE7            xmm7
-#define SSE_EMMS
-
 typedef struct {
-    __declspec(align(SSESIZE)) uint8_t noiselevel[SSESIZE];
+    __declspec(align(16)) uint8_t noiselevel[16];
     uint8_t *blockproperties_addr;
     uint32_t threshold;
     int32_t pline;
@@ -47,7 +19,9 @@ typedef struct {
     void (__stdcall *blockcompareSSE2)(const uint8_t *p1, const uint8_t *p2, int32_t pitch);
 } MotionDetectionData;
 
-typedef struct {
+typedef struct MotionDetectionDistData MotionDetectionDistData;
+
+struct MotionDetectionDistData{
     int32_t distblocks;
     uint32_t blocks;
     uint32_t tolerance;
@@ -63,7 +37,16 @@ typedef struct {
     int32_t isuminc2;
     void (__stdcall *processneighbours)(MotionDetectionDistData*);
     MotionDetectionData md;
-} MotionDetectionDistData;
+};
+
+#define Cleftdp     (-1)
+#define Crightdp    3
+#define Cleftsp     Cleftdp
+#define Crightsp    Crightdp
+#define Crightbldp  4
+#define Crightblsp  Crightbldp
+#define Ctopdp      (-dpitchUV)
+#define Ctopsp      (-spitchUV)
 
 typedef struct {
     int32_t linewidthUV;
@@ -73,6 +56,8 @@ typedef struct {
     int32_t cthreshold;
     int32_t loops;
     int32_t restored_blocks;
+    int32_t (__stdcall *vertical_diff_chroma)(const uint8_t *u, const uint8_t *v, int32_t pitch);
+    void (__stdcall *copy_chroma)(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch);
     MotionDetectionDistData mdd;
 } PostProcessingData;
 

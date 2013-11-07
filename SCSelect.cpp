@@ -67,14 +67,13 @@ set_end:
             vsapi->freeFrame(sf);
             vsapi->freeFrame(nf);
 
-            SSE_EMMS
-                if(d->dirmult * olddiff < d->lastdiff ) {
-                    goto set_end;
-                }
-                if(d->dirmult * d->lastdiff < olddiff ) {
-                    goto set_begin;
-                }
-                selected = d->globalMotion;
+            if(d->dirmult * olddiff < d->lastdiff ) {
+                goto set_end;
+            }
+            if(d->dirmult * d->lastdiff < olddiff ) {
+                goto set_begin;
+            }
+            selected = d->globalMotion;
         }
         vsapi->freeFrame(input_frame);
         vsapi->freeFrame(sceneBegin_frame);
@@ -132,8 +131,8 @@ void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *c
         dFactor = 4.0;
     }
 
-    d.hblocks = d.vi->width / (2 * SSE_INCREMENT);
-    d.incpitch = d.hblocks * (-2 * SSE_INCREMENT);
+    d.hblocks = d.vi->width / (2 * 16);
+    d.incpitch = d.hblocks * (-2 * 16);
 
     SCSelectData *data = (SCSelectData *)malloc(sizeof(d));
     *data = d;

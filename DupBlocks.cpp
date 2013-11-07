@@ -55,9 +55,11 @@ static void VS_CC DupBlocksInit(VSMap *in, VSMap *out, void **instanceData, VSNo
     vsapi->setVideoInfo(d->vi, 1, node);
 }
 
-void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
+void VS_CC CreateDupBlocks(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
 {
-    DupBlocksData d;
+    DupBlocksData d = { 0 };
+
+    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
 
     d.input = vsapi->propGetNode(in, "input", 0, 0);
     d.vi = vsapi->getVideoInfo(d.input);
@@ -71,13 +73,11 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
     d.lfnr = -2;
 
     int32_t err;
-    d.mthreshold = vsapi->propGetInt(in, "gmthreshold", 0, &err);
+    d.mthreshold = (int32_t) vsapi->propGetInt(in, "gmthreshold", 0, &err);
     if (err) {
         d.mthreshold = 80;
     }
     d.mthreshold = (d.mthreshold * d.rd.pp.mdd.md.hblocks * d.rd.pp.mdd.md.vblocks) / 100;
-
-    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
 
     DupBlocksData *data = (DupBlocksData *)malloc(sizeof(d));
     *data = d;
