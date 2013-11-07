@@ -7,10 +7,10 @@ typedef struct {
     VSNodeRef *after;
     VSNodeRef *alternative;
     const VSVideoInfo *vi;
-    int mthreshold;
-    int lastframe;
-    int before_offset;
-    int after_offset;
+    int32_t mthreshold;
+    int32_t lastframe;
+    int32_t before_offset;
+    int32_t after_offset;
     RemoveDirtData rd;
 } RestoreMotionBlocksData;
 
@@ -25,7 +25,7 @@ static void VS_CC RestoreMotionBlocksFree(void *instanceData, VSCore *core, cons
     free(d);
 }
 
-static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi)
+static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int32_t n, int32_t activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi)
 {
     RestoreMotionBlocksData *d = (RestoreMotionBlocksData *) *instanceData;
 
@@ -92,7 +92,7 @@ void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData
 
     d.restore = vsapi->propGetNode(in, "restore", 0, 0);
 
-    int err;
+    int32_t err;
     d.after = vsapi->propGetNode(in, "neighbour", 0, &err);
     if (err) {
         d.after = 0;
@@ -112,7 +112,7 @@ void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData
     if (err) {
         d.mthreshold = 80;
     }
-    d.mthreshold = (d.mthreshold * d.rd.hblocks * d.rd.vblocks) / 100;
+    d.mthreshold = (d.mthreshold * d.rd.pp.mdd.md.hblocks * d.rd.pp.mdd.md.vblocks) / 100;
 
     d.lastframe = d.vi->numFrames - 1;
     d.before_offset = d.after_offset = 0; 
@@ -142,7 +142,7 @@ set_before:
             return;
     }
 
-    FillRemoveDirt(in, vsapi, &d.rd);
+    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
 
     RestoreMotionBlocksData *data = (RestoreMotionBlocksData *)malloc(sizeof(d));
     *data = d;
