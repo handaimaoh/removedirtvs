@@ -6,11 +6,11 @@ typedef struct {
     VSNodeRef *sceneEnd;
     VSNodeRef *globalMotion;
     const VSVideoInfo *vi;
-    int dfactor;
-    int hblocks;
-    int incpitch;
-    unsigned int lastdiff;
-    unsigned int lnr;
+    int32_t dfactor;
+    int32_t hblocks;
+    int32_t incpitch;
+    uint32_t lastdiff;
+    uint32_t lnr;
     double dirmult;
 } SCSelectData;
 
@@ -24,7 +24,7 @@ static void VS_CC SCSelectFree(void *instanceData, VSCore *core, const VSAPI *vs
     free(d);
 }
 
-static const VSFrameRef *VS_CC SCSelectGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi)
+static const VSFrameRef *VS_CC SCSelectGetFrame(int32_t n, int32_t activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi)
 {
     SCSelectData *d = (SCSelectData *) *instanceData;
 
@@ -57,7 +57,7 @@ set_end:
                     d->hblocks, d->incpitch, d->vi->height);
                 vsapi->freeFrame(pf);
             }
-            int olddiff = d->lastdiff;
+            int32_t olddiff = d->lastdiff;
             const VSFrameRef *nf = vsapi->getFrameFilter(n + 1, d->input, frameCtx);
             d->lastdiff  = gdiff(vsapi->getReadPtr(sf, 0), vsapi->getStride(sf, 0),
                 vsapi->getReadPtr(nf, 0), vsapi->getStride(nf, 0),
@@ -126,7 +126,7 @@ void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *c
             return;
     }
 
-    int err;
+    int32_t err;
     double dFactor = vsapi->propGetFloat(in, "dfactor", 0, &err);
     if (err) {
         dFactor = 4.0;
