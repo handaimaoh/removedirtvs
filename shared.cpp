@@ -14,8 +14,8 @@ static inline uint32_t aligned_diff(const uint8_t *sp1, int32_t spitch1, const u
     __asm    mov        ecx,    hblocks
     __asm    align      16
     __asm    _loop:
-    __asm    movdqa  xmm2,   [esi]
-    __asm    movdqa  xmm3,   [esi + 16]
+    __asm    movdqa     xmm2,   [esi]
+    __asm    movdqa     xmm3,  [esi + 16]
     __asm    psadbw     xmm2,   [edi]
     __asm    add        esi,    2 * 16
     __asm    psadbw     xmm3,   [edi + 16]
@@ -119,5 +119,5 @@ VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegiste
                               "dmode:int32_t:opt"\
                               "pthreshold:int32_t:opt"\
                               "cthreshold:int32_t:opt"\
-                              "grey:int32_t:opt", CreateDupBlocks, 0, plugin);
+                              "grey:int32_t:opt", DupBlocksCreate, 0, plugin);
 }
