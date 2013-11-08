@@ -1126,10 +1126,8 @@ static void show_motion(PostProcessingData *pp, uint8_t *u, uint8_t *v, int32_t 
     } while(--j);
 }
 
-static void FillMotionDetection(const VSMap *in, VSMap *out, const VSAPI *vsapi, MotionDetectionData *md, const VSVideoInfo *vi)
+static void FillMotionDetection(MotionDetectionData *md, const VSMap *in, VSMap *out, const VSAPI *vsapi, const VSVideoInfo *vi)
 {
-    md = (MotionDetectionData *)malloc(sizeof(MotionDetectionData));
-
     int32_t err;    
     int32_t noise = (int32_t) vsapi->propGetInt(in, "noise", 0, &err);
     if (err) {
@@ -1178,11 +1176,9 @@ static void FillMotionDetection(const VSMap *in, VSMap *out, const VSAPI *vsapi,
     memset(md->blockproperties_addr, BMARGIN, size);
 }
 
-static void FillMotionDetectionDist(const VSMap *in, VSMap *out, const VSAPI *vsapi, MotionDetectionDistData *mdd, const VSVideoInfo *vi)
+static void FillMotionDetectionDist(MotionDetectionDistData *mdd, const VSMap *in, VSMap *out, const VSAPI *vsapi, const VSVideoInfo *vi)
 {
-    mdd = (MotionDetectionDistData *)malloc(sizeof(MotionDetectionDistData));
-
-    FillMotionDetection(in, out, vsapi, &mdd->md, vi);
+    FillMotionDetection(&mdd->md, in, out, vsapi, vi);
 
     int32_t err;
     uint32_t dmode = (int32_t) vsapi->propGetInt(in, "dmode", 0, &err);
@@ -1236,10 +1232,8 @@ static void FillMotionDetectionDist(const VSMap *in, VSMap *out, const VSAPI *vs
     mdd->isuminc2 = (1 - mdd->md.vblocks * mdd->md.hblocks) * sizeof(uint32_t);
 }
 
-static void FillPostProcessing(const VSMap *in, VSMap *out, const VSAPI *vsapi, PostProcessingData *pp, const VSVideoInfo *vi)
+static void FillPostProcessing(PostProcessingData *pp, const VSMap *in, VSMap *out, const VSAPI *vsapi, const VSVideoInfo *vi)
 {
-    pp = (PostProcessingData *)malloc(sizeof(PostProcessingData));
-
     int32_t err;
     pp->pthreshold = (int32_t) vsapi->propGetInt(in, "pthreshold", 0, &err);
     if (err) {
@@ -1251,7 +1245,7 @@ static void FillPostProcessing(const VSMap *in, VSMap *out, const VSAPI *vsapi, 
         pp->cthreshold = 10;
     }
 
-    FillMotionDetectionDist(in, out, vsapi, &pp->mdd, vi);
+    FillMotionDetectionDist(&pp->mdd, in, out, vsapi, vi);
 
     pp->vertical_diff_chroma = vertical_diff_yv12_chroma;
     pp->copy_chroma = copy_yv12_chroma;
@@ -1267,10 +1261,8 @@ static void FillPostProcessing(const VSMap *in, VSMap *out, const VSAPI *vsapi, 
     pp->chromaheightm = pp->chromaheight - 1;
 }
 
-void FillRemoveDirt(const VSMap *in, VSMap *out, const VSAPI *vsapi, RemoveDirtData *rd, const VSVideoInfo *vi)
+void FillRemoveDirt(RemoveDirtData *rd, const VSMap *in, VSMap *out, const VSAPI *vsapi, const VSVideoInfo *vi)
 {
-    rd = (RemoveDirtData *)malloc(sizeof(RemoveDirtData));
-
     int32_t err;
     rd->grey = vsapi->propGetInt(in, "grey", 0, &err) == 1;
     if (err) {
@@ -1282,7 +1274,7 @@ void FillRemoveDirt(const VSMap *in, VSMap *out, const VSAPI *vsapi, RemoveDirtD
         rd->show = false;
     }
 
-    FillPostProcessing(in, out, vsapi, &rd->pp, vi);
+    FillPostProcessing(&rd->pp, in, out, vsapi, vi);
 }
 
 int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int32_t frame, const VSAPI *vsapi)

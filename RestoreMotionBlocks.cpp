@@ -22,10 +22,6 @@ static void VS_CC RestoreMotionBlocksFree(void *instanceData, VSCore *core, cons
     vsapi->freeNode(d->before);
     vsapi->freeNode(d->after);
     vsapi->freeNode(d->alternative);
-    free(&d->rd.pp.mdd.md);
-    free(&d->rd.pp.mdd);
-    free(&d->rd.pp);
-    free(&d->rd);
     free(d);
 }
 
@@ -36,33 +32,41 @@ static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int32_t n, int32_t ac
     if (activationReason == arInitial) {
         vsapi->requestFrameFilter(n, d->input, frameCtx);
         vsapi->requestFrameFilter(n, d->restore, frameCtx);
-        vsapi->requestFrameFilter(n, d->before, frameCtx);
-        vsapi->requestFrameFilter(n, d->after, frameCtx);
+
+        if (n + d->before_offset >= 0) {
+            vsapi->requestFrameFilter(n, d->before, frameCtx);
+        }
+
+        if (n + d->after_offset <= d->lastframe) {
+            vsapi->requestFrameFilter(n, d->after, frameCtx);
+        }
+        
         vsapi->requestFrameFilter(n, d->alternative, frameCtx);
-    } else if (activationReason == arAllFramesReady) {        
+    } else if (activationReason == arAllFramesReady) {
         if ((n + d->before_offset < 0) || (n + d->after_offset > d->lastframe)) {
             return vsapi->getFrameFilter(n, d->alternative, frameCtx);
         }
 
-        const VSFrameRef *pf = vsapi->getFrameFilter(n + d->before_offset, d->before, frameCtx);
-        const VSFrameRef *df = vsapi->getFrameFilter(n, d->input, frameCtx);
-        VSFrameRef *df_copy = vsapi->copyFrame(df, core);
-        const VSFrameRef *rf = vsapi->getFrameFilter(n, d->restore, frameCtx);
-        const VSFrameRef *nf = vsapi->getFrameFilter(n + d->after_offset, d->after, frameCtx);
+        const VSFrameRef *prev_frame = vsapi->getFrameFilter(n + d->before_offset, d->before, frameCtx);
+        const VSFrameRef *restore_frame = vsapi->getFrameFilter(n, d->restore, frameCtx);
+        const VSFrameRef *next_frame = vsapi->getFrameFilter(n + d->after_offset, d->after, frameCtx);
 
-        if(RemoveDirtProcessFrame(&d->rd, df_copy, rf, pf, nf, n, vsapi) > d->mthreshold) {
-            vsapi->freeFrame(pf);
-            vsapi->freeFrame(df);
-            vsapi->freeFrame(rf);
-            vsapi->freeFrame(nf);
-            vsapi->freeFrame(df_copy);
+        const VSFrameRef *dest = vsapi->copyFrame(prev_frame, core);
+        VSFrameRef *dest_copy = vsapi->copyFrame(dest, core);
+
+        if(RemoveDirtProcessFrame(&d->rd, dest_copy, restore_frame, prev_frame, next_frame, n, vsapi) > d->mthreshold) {
+            vsapi->freeFrame(prev_frame);
+            vsapi->freeFrame(restore_frame);
+            vsapi->freeFrame(next_frame);
+            vsapi->freeFrame(dest);
+            vsapi->freeFrame(dest_copy);
             return vsapi->getFrameFilter(n, d->alternative, frameCtx);
         } else {
-            vsapi->freeFrame(pf);
-            vsapi->freeFrame(df);
-            vsapi->freeFrame(rf);
-            vsapi->freeFrame(nf);
-            return df_copy;
+            vsapi->freeFrame(prev_frame);
+            vsapi->freeFrame(restore_frame);
+            vsapi->freeFrame(next_frame);
+            vsapi->freeFrame(dest);
+            return dest_copy;
         }
     }
 
@@ -79,7 +83,7 @@ void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData
 {
     RestoreMotionBlocksData d = { 0 };
 
-    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
+    FillRemoveDirt(&d.rd, in, out, vsapi, vsapi->getVideoInfo(d.input));
 
     d.input = vsapi->propGetNode(in, "input", 0, 0);
     d.vi = vsapi->getVideoInfo(d.input);

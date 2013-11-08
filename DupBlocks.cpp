@@ -24,24 +24,25 @@ static const VSFrameRef *VS_CC DupBlocksGetFrame(int32_t n, int32_t activationRe
     if (activationReason == arInitial) {
         vsapi->requestFrameFilter(n, d->input, frameCtx);
     } else if (activationReason == arAllFramesReady) {
-        const VSFrameRef *rf = vsapi->getFrameFilter(n, d->input, frameCtx);
+        const VSFrameRef *restore_frame = vsapi->getFrameFilter(n, d->input, frameCtx);
+        
         if(n - 1 != d->lfnr) {
             if( n == 0 ) {
-                return rf;
+                return restore_frame;
             }
 
-            d->lf = vsapi->copyFrame(rf, core);
+            d->lf = vsapi->copyFrame(restore_frame, core);
         }
 
         if(d->rd.show) {
-            copyChroma(d->lf, rf, d->vi, vsapi);
+            copyChroma(d->lf, restore_frame, d->vi, vsapi);
         }
 
-        if(RemoveDirtProcessFrame(&d->rd, d->lf, rf, d->lf, rf, n, vsapi) > d->mthreshold) {
-            return rf;
+        if(RemoveDirtProcessFrame(&d->rd, d->lf, restore_frame, d->lf, restore_frame, n, vsapi) > d->mthreshold) {
+            return restore_frame;
         }
 
-        vsapi->freeFrame(rf);
+        vsapi->freeFrame(restore_frame);
         d->lfnr = n;
         return vsapi->copyFrame(d->lf, core);
     }
@@ -59,7 +60,7 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
 {
     DupBlocksData d = { 0 };
 
-    FillRemoveDirt(in, out, vsapi, &d.rd, vsapi->getVideoInfo(d.input));
+    FillRemoveDirt(&d.rd, in, out, vsapi, vsapi->getVideoInfo(d.input));
 
     d.input = vsapi->propGetNode(in, "input", 0, 0);
     d.vi = vsapi->getVideoInfo(d.input);

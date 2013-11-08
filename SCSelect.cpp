@@ -30,15 +30,13 @@ static const VSFrameRef *VS_CC SCSelectGetFrame(int32_t n, int32_t activationRea
 
     if (activationReason == arInitial) {
         vsapi->requestFrameFilter(n, d->input, frameCtx);
-        vsapi->requestFrameFilter(n, d->sceneBegin, frameCtx);
-        vsapi->requestFrameFilter(n, d->sceneEnd, frameCtx);
-        vsapi->requestFrameFilter(n, d->globalMotion, frameCtx);
+        if (n > 0) {
+            vsapi->requestFrameFilter(n - 1, d->input, frameCtx);
+            if (n < d->vi->numFrames) {
+                vsapi->requestFrameFilter(n + 1, d->input, frameCtx);
+            }
+        }
     } else if (activationReason == arAllFramesReady) {
-        const VSFrameRef *input_frame = vsapi->getFrameFilter(n, d->input, frameCtx);
-        const VSFrameRef *sceneBegin_frame = vsapi->getFrameFilter(n, d->sceneBegin, frameCtx);
-        const VSFrameRef *sceneEnd_frame = vsapi->getFrameFilter(n, d->sceneEnd, frameCtx);
-        const VSFrameRef *globalMotion_frame = vsapi->getFrameFilter(n, d->globalMotion, frameCtx);
-
         VSNodeRef *selected;
 
         if (n == 0) {
@@ -48,24 +46,25 @@ set_begin:
 set_end:
             selected = d->sceneEnd;
         } else {
-            const VSFrameRef *sf = vsapi->getFrameFilter(n, d->input, frameCtx);
+            const VSFrameRef *src_frame = vsapi->getFrameFilter(n, d->input, frameCtx);
 
             if (d->lnr != n - 1) {
-                const VSFrameRef *pf = vsapi->getFrameFilter(n - 1, d->input, frameCtx);
-                d->lastdiff = gdiff(vsapi->getReadPtr(sf, 0), vsapi->getStride(sf, 0),
-                    vsapi->getReadPtr(pf, 0), vsapi->getStride(pf, 0),
+                const VSFrameRef *prev_frame = vsapi->getFrameFilter(n - 1, d->input, frameCtx);
+                d->lastdiff = gdiff(vsapi->getReadPtr(src_frame, 0), vsapi->getStride(src_frame, 0),
+                    vsapi->getReadPtr(prev_frame, 0), vsapi->getStride(prev_frame, 0),
                     d->hblocks, d->incpitch, d->vi->height);
-                vsapi->freeFrame(pf);
+                vsapi->freeFrame(prev_frame);
             }
+
             int32_t olddiff = d->lastdiff;
-            const VSFrameRef *nf = vsapi->getFrameFilter(n + 1, d->input, frameCtx);
-            d->lastdiff  = gdiff(vsapi->getReadPtr(sf, 0), vsapi->getStride(sf, 0),
-                vsapi->getReadPtr(nf, 0), vsapi->getStride(nf, 0),
+            const VSFrameRef *next_frame = vsapi->getFrameFilter(n + 1, d->input, frameCtx);
+            d->lastdiff  = gdiff(vsapi->getReadPtr(src_frame, 0), vsapi->getStride(src_frame, 0),
+                vsapi->getReadPtr(next_frame, 0), vsapi->getStride(next_frame, 0),
                 d->hblocks, d->incpitch, d->vi->height);
             d->lnr = n;
 
-            vsapi->freeFrame(sf);
-            vsapi->freeFrame(nf);
+            vsapi->freeFrame(src_frame);
+            vsapi->freeFrame(next_frame);
 
             if(d->dirmult * olddiff < d->lastdiff ) {
                 goto set_end;
@@ -75,10 +74,6 @@ set_end:
             }
             selected = d->globalMotion;
         }
-        vsapi->freeFrame(input_frame);
-        vsapi->freeFrame(sceneBegin_frame);
-        vsapi->freeFrame(sceneEnd_frame);
-        vsapi->freeFrame(globalMotion_frame);
         return vsapi->getFrameFilter(n, selected, frameCtx);
     }
 
@@ -93,7 +88,7 @@ static void VS_CC SCSelectInit(VSMap *in, VSMap *out, void **instanceData, VSNod
 
 void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
 {
-    SCSelectData d;
+    SCSelectData d = { 0 };
 
     d.input = vsapi->propGetNode(in, "input", 0, 0);
     d.vi = vsapi->getVideoInfo(d.input);

@@ -1,6 +1,42 @@
 #include "VapourSynth.h"
 #include "VSHelper.h"
 
+#define ISSE 2
+#define	ALIGNPITCH
+#define	SMOOTH2
+
+typedef struct {
+    VSNodeRef *input;
+    const VSVideoInfo *vi;
+    int32_t hblocks[3];
+    int32_t remainder[3];
+    int32_t incpitch[3];
+    bool grey;
+} GenericClenseData;
+
+typedef struct {
+    const VSFrameRef *last_frame;
+    uint32_t lnr;
+    bool reduceflicker;
+    GenericClenseData gc;
+} CleanseData;
+
+typedef struct {
+    VSNodeRef *prev_clip;
+    VSNodeRef *next_clip;
+    const VSVideoInfo *vi;
+    GenericClenseData gc;
+} BMCCleanse;
+
+typedef struct {
+    GenericClenseData gc;
+} BackwardCleanseData;
+
+typedef struct {
+    int lastnr;
+    BackwardCleanseData bc;
+} FowardCleanseData;
+
 typedef struct {
     __declspec(align(16)) uint8_t noiselevel[16];
     uint8_t *blockproperties_addr;
@@ -78,4 +114,4 @@ void VS_CC ForwardCleanseCreate(const VSMap *in, VSMap *out, void *userData, VSC
 uint32_t gdiff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height);
 void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *vi, const VSAPI *vsapi);
 int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int32_t frame, const VSAPI *vsapi);
-void FillRemoveDirt(const VSMap *in, VSMap *out, const VSAPI *vsapi, RemoveDirtData *rd, const VSVideoInfo *vi);
+void FillRemoveDirt(RemoveDirtData *rd, const VSMap *in, VSMap *out, const VSAPI *vsapi, const VSVideoInfo *vi);
