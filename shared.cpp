@@ -68,10 +68,11 @@ static inline uint32_t unaligned_diff(const uint8_t *sp1, int32_t spitch1, const
 
 uint32_t gdiff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height)
 {
-    if((((uint32_t)sp1 & (16 - 1)) + ((uint32_t)sp2 & (16 - 1))) == 0)
-        aligned_diff(sp1, spitch1, sp2, spitch2, hblocks, incpitch, height);
-    else unaligned_diff(sp1, spitch1, sp2, spitch2, hblocks, incpitch, height);
-
+    if((((uint32_t)sp1 & (16 - 1)) + ((uint32_t)sp2 & (16 - 1))) == 0) {
+        return aligned_diff(sp1, spitch1, sp2, spitch2, hblocks, incpitch, height);
+    } else {
+        return unaligned_diff(sp1, spitch1, sp2, spitch2, hblocks, incpitch, height);
+    }
 }
 
 void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *vi, const VSAPI *vsapi)

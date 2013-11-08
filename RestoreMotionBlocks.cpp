@@ -94,7 +94,7 @@ void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData
         return;
     }
 
-    if (d.vi->format->id != pfYUV420P8 || d.vi->format->id != pfYUV422P8) {
+    if (d.vi->format->id != pfYUV420P8 && d.vi->format->id != pfYUV422P8) {
         vsapi->freeNode(d.input);
         vsapi->setError(out, "SCSelect: Only planar YV12 and YUY2 colorspaces are supported");
         return;
