@@ -83,10 +83,10 @@ void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData
 {
     RestoreMotionBlocksData d = { 0 };
 
-    FillRemoveDirt(&d.rd, in, out, vsapi, vsapi->getVideoInfo(d.input));
-
     d.input = vsapi->propGetNode(in, "input", 0, 0);
     d.vi = vsapi->getVideoInfo(d.input);
+
+    FillRemoveDirt(&d.rd, in, out, vsapi, vsapi->getVideoInfo(d.input));
 
     if (!isConstantFormat(d.vi)) {
         vsapi->freeNode(d.input);

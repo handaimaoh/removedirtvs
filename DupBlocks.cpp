@@ -60,10 +60,10 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
 {
     DupBlocksData d = { 0 };
 
-    FillRemoveDirt(&d.rd, in, out, vsapi, vsapi->getVideoInfo(d.input));
-
     d.input = vsapi->propGetNode(in, "input", 0, 0);
     d.vi = vsapi->getVideoInfo(d.input);
+
+    FillRemoveDirt(&d.rd, in, out, vsapi, vsapi->getVideoInfo(d.input));
 
     if (d.vi->format->id != pfYUV420P8 && d.vi->format->id != pfYUV422P8) {
         vsapi->freeNode(d.input);
