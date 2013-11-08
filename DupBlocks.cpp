@@ -55,7 +55,7 @@ static void VS_CC DupBlocksInit(VSMap *in, VSMap *out, void **instanceData, VSNo
     vsapi->setVideoInfo(d->vi, 1, node);
 }
 
-void VS_CC CreateDupBlocks(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
+void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi)
 {
     DupBlocksData d = { 0 };
 
