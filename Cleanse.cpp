@@ -181,77 +181,59 @@ static void sclense(uint8_t *dp, int32_t dpitch, const uint8_t *_sp, int32_t spi
 
 void inline ACleansePixel(uint8_t *dp, const uint8_t *_sp, const uint8_t *pp, const uint8_t *np)
 {
-    //__asm   movdqa  reg1,           [naddr]
     __m128i reg1 = _mm_load_si128((__m128i*)np);
-    //__asm   movdqa  reg2,           [naddr + 16]
     __m128i reg2 = _mm_load_si128((__m128i*)(np+16));
-    //__asm   movdqa  reg3,           reg1
     __m128i reg3 = reg1;
-    //__asm   movdqa  reg5,           [paddr]
+
     __m128i reg5 = _mm_load_si128((__m128i*)pp);
-    //__asm   movdqa  reg4,           reg2
     __m128i reg4 = reg2;
-    //__asm   movdqa  reg6,           [paddr + 16]
+
     __m128i reg6 = _mm_load_si128((__m128i*)(pp+16));
-    //__asm   pminub  reg1,           reg5
+
     reg1 = _mm_min_epu8(reg1, reg5);
-    //__asm   pminub  reg2,           reg6
     reg2 = _mm_min_epu8(reg2, reg6);
-    //__asm   pmaxub  reg1,           [saddr]
+
     __m128i reg7 = _mm_load_si128((__m128i*)_sp);
-    //__asm   pmaxub  reg3,           reg5
+
     reg3 = _mm_max_epu8(reg3, reg5);
-    //__asm   pmaxub  reg4,           reg6
     reg4 = _mm_max_epu8(reg4, reg6);
-    //__asm   pmaxub  reg2,           [saddr + 16]
+
     __m128i reg8 = _mm_load_si128((__m128i*)(_sp+16));
-    //__asm   pminub  reg1,           reg3
+
     reg1 = _mm_min_epu8(reg1, reg3);
-    //__asm   pminub  reg2,           reg4
     reg2 = _mm_min_epu8(reg2, reg4);
-    //__asm   movdqa  [daddr],        reg1
+
     _mm_store_si128((__m128i*)dp, reg1);
-    //__asm   movdqa  [daddr + 16],   reg2
     _mm_store_si128((__m128i*)(dp+16), reg2);
 }
 
 void inline UCleansePixel(uint8_t *dp, const uint8_t *_sp, const uint8_t *pp, const uint8_t *np)
 {
-    //__asm movdqu  reg1,           [naddr]
     __m128i xmm0 = _mm_loadu_si128((__m128i*)np);
-    //__asm movdqu  reg2,           [naddr + 16]
     __m128i xmm1 = _mm_loadu_si128((__m128i*)(np+16));
-    //__asm movdqa  reg3,           reg1
     __m128i xmm2 = xmm0;
-    //__asm movdqu  reg5,           [paddr]
+
     __m128i xmm4 = _mm_loadu_si128((__m128i*)pp);
-    //__asm movdqa  reg4,           reg2
     __m128i xmm3 = xmm1;
-    //__asm movdqu  reg6,           [paddr + 16]
+
     __m128i xmm5 = _mm_loadu_si128((__m128i*)(pp+16));
-    //__asm pminub  reg1,           reg5
+
     xmm0 = _mm_min_epu8(xmm0, xmm4);
-    //__asm pminub  reg2,           reg6
     xmm1 = _mm_min_epu8(xmm1, xmm5);
-    //__asm movdqu  reg7,           [saddr]
+
     __m128i xmm6 = _mm_loadu_si128((__m128i*)_sp);
-    //__asm pmaxub  reg3,           reg5
+
     xmm2 = _mm_max_epu8(xmm2, xmm4);
-    //__asm pmaxub  reg4,           reg6
     xmm3 = _mm_max_epu8(xmm3, xmm5);
-    //__asm movdqu  reg8,           [saddr + 16]
+
     __m128i xmm7 = _mm_loadu_si128((__m128i*)(_sp+16));
-    //__asm pmaxub  reg1,           reg7
+
     xmm0 = _mm_max_epu8(xmm0, xmm6);
-    //__asm pmaxub  reg2,           reg8
     xmm1 = _mm_max_epu8(xmm1, xmm7);
-    //__asm pminub  reg1,           reg3
     xmm0 = _mm_min_epu8(xmm0, xmm2);
-    //__asm pminub  reg2,           reg4
     xmm1 = _mm_min_epu8(xmm1, xmm3);
-    //__asm movdqu  [daddr],        reg1
+
     _mm_storeu_si128((__m128i*)dp, xmm0);
-    //__asm movdqu  [daddr + 16],   reg2
     _mm_storeu_si128((__m128i*)(dp+16), xmm1);
 }
 
