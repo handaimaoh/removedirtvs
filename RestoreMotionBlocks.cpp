@@ -30,18 +30,13 @@ static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int32_t n, int32_t ac
     RestoreMotionBlocksData *d = (RestoreMotionBlocksData *) *instanceData;
 
     if (activationReason == arInitial) {
-        vsapi->requestFrameFilter(n, d->input, frameCtx);
-        vsapi->requestFrameFilter(n, d->restore, frameCtx);
-
-        if (n + d->before_offset >= 0) {
-            vsapi->requestFrameFilter(n, d->before, frameCtx);
+        if ((n + d->before_offset < 0) || (n + d->after_offset > d->lastframe)) {
+            vsapi->requestFrameFilter(n, d->alternative, frameCtx);
+        } else {
+            vsapi->requestFrameFilter(n + d->before_offset, d->before, frameCtx);
+            vsapi->requestFrameFilter(n + d->after_offset, d->after, frameCtx);
+            vsapi->requestFrameFilter(n, d->restore, frameCtx);
         }
-
-        if (n + d->after_offset <= d->lastframe) {
-            vsapi->requestFrameFilter(n, d->after, frameCtx);
-        }
-        
-        vsapi->requestFrameFilter(n, d->alternative, frameCtx);
     } else if (activationReason == arAllFramesReady) {
         if ((n + d->before_offset < 0) || (n + d->after_offset > d->lastframe)) {
             return vsapi->getFrameFilter(n, d->alternative, frameCtx);
@@ -155,5 +150,5 @@ set_before:
     RestoreMotionBlocksData *data = (RestoreMotionBlocksData *)malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "RestoreMotionBlocks", RestoreMotionBlocksInit, RestoreMotionBlocksGetFrame, RestoreMotionBlocksFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "RestoreMotionBlocks", RestoreMotionBlocksInit, RestoreMotionBlocksGetFrame, RestoreMotionBlocksFree, fmSerial, 0, data, core);
 }

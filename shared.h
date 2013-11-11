@@ -1,5 +1,6 @@
 #include "VapourSynth.h"
 #include "VSHelper.h"
+#include "intrin.h"
 
 #define ISSE 2
 #define	ALIGNPITCH
@@ -51,8 +52,8 @@ typedef struct {
     int32_t hblocksSSE2;
     bool remainderSSE2;
     int32_t linewidthSSE2;
-    uint32_t (__stdcall *blockcompare)(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2);
-    void (__stdcall *blockcompareSSE2)(const uint8_t *p1, const uint8_t *p2, int32_t pitch);
+    uint32_t (__stdcall *blockcompare)(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel);
+    void (__stdcall *blockcompareSSE2)(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel);
 } MotionDetectionData;
 
 typedef struct MotionDetectionDistData MotionDetectionDistData;

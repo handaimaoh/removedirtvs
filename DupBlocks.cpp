@@ -83,5 +83,5 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
     DupBlocksData *data = (DupBlocksData *)malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "DupBlocks", DupBlocksInit, DupBlocksGetFrame, DupBlocksFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "DupBlocks", DupBlocksInit, DupBlocksGetFrame, DupBlocksFree, fmSerial, 0, data, core);
 }

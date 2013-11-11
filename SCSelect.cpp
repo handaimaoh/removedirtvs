@@ -29,12 +29,18 @@ static const VSFrameRef *VS_CC SCSelectGetFrame(int32_t n, int32_t activationRea
     SCSelectData *d = (SCSelectData *) *instanceData;
 
     if (activationReason == arInitial) {
-        vsapi->requestFrameFilter(n, d->input, frameCtx);
-        if (n > 0) {
+        if (n == 0) {
+            vsapi->requestFrameFilter(n, d->sceneBegin, frameCtx);
+        } else if (n >= d->vi->numFrames) {
+            vsapi->requestFrameFilter(n, d->sceneEnd, frameCtx);
+        } else if (n > 0) {
+            vsapi->requestFrameFilter(n, d->input, frameCtx);
             vsapi->requestFrameFilter(n - 1, d->input, frameCtx);
             if (n < d->vi->numFrames) {
                 vsapi->requestFrameFilter(n + 1, d->input, frameCtx);
             }
+            vsapi->requestFrameFilter(n, d->sceneBegin, frameCtx);
+            vsapi->requestFrameFilter(n, d->sceneEnd, frameCtx);
         }
     } else if (activationReason == arAllFramesReady) {
         VSNodeRef *selected;
@@ -132,5 +138,5 @@ void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *c
     SCSelectData *data = (SCSelectData *)malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "SCSelect", SCSelectInit, SCSelectGetFrame, SCSelectFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "SCSelect", SCSelectInit, SCSelectGetFrame, SCSelectFree, fmSerial, 0, data, core);
 };

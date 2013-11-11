@@ -57,7 +57,7 @@
 
 __declspec(align(16)) uint32_t blockcompare_result[4];
 
-static void __stdcall SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch)
+static void __stdcall SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
     __asm	mov			edx,				pitch
     __asm	mov			eax,				p1
@@ -92,8 +92,10 @@ static void __stdcall SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32
 }
 
 // xmm7 contains already the noise level!
-static void __stdcall NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch)
+static void __stdcall NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
+    __asm   mov         eax,                noiselevel
+    __asm   movdqu      xmm7,               [eax]
     __asm	mov			edx,				pitch
     __asm	mov			eax,				p1
     __asm	lea			ecx,				[edx + 2*edx]
@@ -180,8 +182,10 @@ static void __stdcall NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int3
 
 static const __declspec(align(16)) uint8_t excessaddSSE2[16] = { 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8 };
 
-static void __stdcall ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch)
+static void __stdcall ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
+    __asm   mov         eax,                noiselevel
+    __asm   movdqu      xmm7,               [eax]
     __asm	mov			edx,				pitch
     __asm	mov			eax,				p1
     __asm	lea			ecx,				[edx + 2*edx]
@@ -268,7 +272,7 @@ static void __stdcall ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2, int
     __asm	movdqa		blockcompare_result,xmm0
 }
 
-static uint32_t __stdcall SADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2)
+static uint32_t __stdcall SADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
     __asm	mov			edx,				pitch1
     __asm	mov			esi,				pitch2
@@ -305,8 +309,10 @@ static uint32_t __stdcall SADcompare(const uint8_t *p1, int32_t pitch1, const ui
 }
 
 // mm7 contains already the noise level!
-static uint32_t __stdcall NSADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2)
+static uint32_t __stdcall NSADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
+    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
+
     __asm	mov			edx,				pitch1
     __asm	mov			esi,				pitch2
     __asm	mov			eax,				p1
@@ -365,65 +371,160 @@ static uint32_t __stdcall NSADcompare(const uint8_t *p1, int32_t pitch1, const u
 
 static const __declspec(align(16)) uint8_t excessadd[16] = { 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4 };
 
-static uint32_t __stdcall ExcessPixels(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2)
+static __forceinline uint32_t __stdcall ExcessPixels(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
-    __asm	mov			edx,				pitch1
-    __asm	mov			esi,				pitch2
-    __asm	mov			eax,				p1
-    __asm	lea			ecx,				[edx + 2*edx]
-    __asm	lea			edi,				[esi + 2*esi]
-    __asm	mov			ebx,				p2
-    __asm	movq		xmm0,				QWORD PTR[eax]
-    __asm	movq		xmm2,				QWORD PTR[eax + edx]
-    __asm	movhps		xmm0,				[eax + 2*edx]
-    __asm	movhps		xmm2,				[eax + ecx]
-    __asm	movdqa		xmm3,				xmm0
-    __asm	movdqa		xmm4,				xmm2
-    __asm	movq		xmm5,				QWORD PTR[ebx]
-    __asm	movq		xmm6,				QWORD PTR[ebx + esi]
-    __asm	lea			eax,				[eax + 4*edx]
-    __asm	movhps		xmm5,				[ebx + 2*esi]
-    __asm	movhps		xmm6,				[ebx + edi]
-    __asm	psubusb		xmm0,				xmm5
-    __asm	psubusb		xmm2,				xmm6
-    __asm	psubusb		xmm5,				xmm3
-    __asm	psubusb		xmm6,				xmm4
-    __asm	psubusb		xmm0,				xmm7
-    __asm	psubusb		xmm2,				xmm7
-    __asm	lea			ebx,				[ebx + 4*esi]
-    __asm	psubusb		xmm5,				xmm7
-    __asm	psubusb		xmm6,				xmm7
-    __asm	pcmpeqb		xmm0,				xmm5
-    __asm	pcmpeqb		xmm6,				xmm2
-    __asm	movq		xmm1,				QWORD PTR[eax]
+    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
+    //__asm	mov			edx,				pitch1
+    //__asm	mov			esi,				pitch2
+    //__asm	mov			eax,				p1
+    
+    //__asm	lea			ecx,				[edx + 2*edx]
+    int pitch1x3 = pitch1 * 3;
+    
+    //__asm	lea			edi,				[esi + 2*esi]
+    int pitch2x3 = pitch2 * 3;
+    //__asm	mov			ebx,				p2
+    
+    //__asm	movq		xmm0,				QWORD PTR[eax]
+    //__asm	movhps		xmm0,				[eax + 2*edx]
+    __m128i xmm0;
+    xmm0 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm0), (__m64 *)(p1)), (__m64 *)(p1+(2*pitch1))));
+    
+    //__asm	movq		xmm2,				QWORD PTR[eax + edx]
+    //__asm	movhps		xmm2,				[eax + ecx]
+    __m128i xmm2;
+    xmm2 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm2), (__m64 *)(p1+pitch1)), (__m64 *)(p1+pitch1x3)));
+    
+    //__asm	movdqa		xmm3,				xmm0
+    __m128i xmm3 = _mm_loadu_si128((__m128i*)&xmm0);
+    
+    //__asm	movdqa		xmm4,				xmm2
+    __m128i xmm4 = _mm_loadu_si128((__m128i*)&xmm2);
+    
+    //__asm	movq		xmm5,				QWORD PTR[ebx]
+    //__asm	movhps		xmm5,				[ebx + 2*esi]
+    __m128i xmm5;
+    xmm5 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm5), (__m64 *)(p2)), (__m64 *)(p2+(2*pitch2))));
+    
+    //__asm	movq		xmm6,				QWORD PTR[ebx + esi]
+    //__asm	movhps		xmm6,				[ebx + edi]
+    __m128i xmm6;
+    xmm6 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm6), (__m64 *)(p2+pitch2)), (__m64 *)(p2+pitch2x3)));
+
+    //__asm	lea			eax,				[eax + 4*edx]
+    p1 += (4*pitch1);
+    
+    //__asm	psubusb		xmm0,				xmm5
+    xmm0 = _mm_subs_epu8(xmm0, xmm5);
+
+    //__asm	psubusb		xmm2,				xmm6
+    xmm2 = _mm_subs_epu8(xmm2, xmm6);
+
+    //__asm	psubusb		xmm5,				xmm3
+    xmm5 = _mm_subs_epu8(xmm5, xmm3);
+
+    //__asm	psubusb		xmm6,				xmm4
+    xmm6 = _mm_subs_epu8(xmm6, xmm4);
+    
+    //__asm	psubusb		xmm0,				xmm7
+    xmm0 = _mm_subs_epu8(xmm0, xmm7);
+
+    //__asm	psubusb		xmm2,				xmm7
+    xmm2 = _mm_subs_epu8(xmm2, xmm7);
+
+    //__asm	lea			ebx,				[ebx + 4*esi]
+    p2 += (4*pitch2);
+    
+    //__asm	psubusb		xmm5,				xmm7
+    xmm5 = _mm_subs_epu8(xmm5, xmm7);
+
+    //__asm	psubusb		xmm6,				xmm7
+    xmm6 = _mm_subs_epu8(xmm6, xmm7);
+    
+    //__asm	pcmpeqb		xmm0,				xmm5
+    xmm0 = _mm_cmpeq_epi8(xmm0, xmm5);
+
+    //__asm	pcmpeqb		xmm6,				xmm2
+    xmm6 = _mm_cmpeq_epi8(xmm6, xmm2);
+
+    //__asm	movq		xmm1,				QWORD PTR[eax]
+    //__asm	movhps		xmm1,				[eax + 2*edx]
+    __m128i xmm1;
+    xmm1 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm1), (__m64 *)(p1)), (__m64 *)(p1+(2*pitch1))));
+
     __asm	paddb		xmm0,				xmm6
-    __asm	movq		xmm2,				QWORD PTR[eax + edx]
-    __asm	movhps		xmm1,				[eax + 2*edx]
-    __asm	movhps		xmm2,				[eax + ecx]
-    __asm	movdqa		xmm3,				xmm1
-    __asm	movdqa		xmm4,				xmm2
-    __asm	movq		xmm5,				QWORD PTR[ebx]
-    __asm	movq		xmm6,				QWORD PTR[ebx + esi]
-    __asm	movhps		xmm5,				[ebx + 2*esi]
-    __asm	movhps		xmm6,				[ebx + edi]
-    __asm	psubusb		xmm1,				xmm5
-    __asm	psubusb		xmm2,				xmm6
-    __asm	psubusb		xmm5,				xmm3
-    __asm	psubusb		xmm6,				xmm4
-    __asm	psubusb		xmm1,				xmm7
-    __asm	psubusb		xmm2,				xmm7
-    __asm	psubusb		xmm5,				xmm7
-    __asm	psubusb		xmm6,				xmm7
-    __asm	pcmpeqb		xmm1,				xmm5
-    __asm	pcmpeqb		xmm6,				xmm2
-    __asm	pxor		xmm5,				xmm5
-    __asm	paddb		xmm0,				xmm1
-    __asm	paddb		xmm6,				excessadd
-    __asm	paddb		xmm0,				xmm6
-    __asm	psadbw		xmm0,				xmm5
-    __asm	movhlps		xmm1,				xmm0
-    __asm	paddd		xmm0,				xmm1
-    __asm	movd		eax,				xmm0
+    xmm0 = _mm_add_epi8(xmm0, xmm6);
+
+    //__asm	movq		xmm2,				QWORD PTR[eax + edx]
+    //__asm	movhps		xmm2,				[eax + ecx]
+    xmm2 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm2), (__m64 *)(p1)), (__m64 *)(p1+pitch1x3)));
+
+    //__asm	movdqa		xmm3,				xmm1
+    //__asm	movdqa		xmm4,				xmm2
+    xmm3 = xmm1;
+    xmm4 = xmm2;
+
+    //__asm	movq		xmm5,				QWORD PTR[ebx]
+    //__asm	movhps		xmm5,				[ebx + 2*esi]
+    xmm5 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm5), (__m64 *)(p2)), (__m64 *)(p2+(2*pitch2))));
+
+    //__asm	movq		xmm6,				QWORD PTR[ebx + esi]
+    //__asm	movhps		xmm6,				[ebx + edi]
+    xmm6 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm6), (__m64 *)(p2+pitch2)), (__m64 *)(p2+pitch2x3)));
+
+    //__asm	psubusb		xmm1,				xmm5
+    xmm1 = _mm_subs_epu8(xmm1, xmm5);
+
+    //__asm	psubusb		xmm2,				xmm6
+    xmm2 = _mm_subs_epu8(xmm2, xmm6);
+
+    //__asm	psubusb		xmm5,				xmm3
+    xmm5 = _mm_subs_epu8(xmm5, xmm3);
+
+    //__asm	psubusb		xmm6,				xmm4
+    xmm6 = _mm_subs_epu8(xmm6, xmm4);
+
+    //__asm	psubusb		xmm1,				xmm7
+    xmm1 = _mm_subs_epu8(xmm1, xmm7);
+
+    //__asm	psubusb		xmm2,				xmm7
+    xmm2 = _mm_subs_epu8(xmm2, xmm7);
+
+    //__asm	psubusb		xmm5,				xmm7
+    xmm5 = _mm_subs_epu8(xmm5, xmm7);
+
+    //__asm	psubusb		xmm6,				xmm7
+    xmm6 = _mm_subs_epu8(xmm6, xmm7);
+
+    //__asm	pcmpeqb		xmm1,				xmm5
+    xmm1 = _mm_cmpeq_epi8(xmm1, xmm5);
+
+    //__asm	pcmpeqb		xmm6,				xmm2
+    xmm6 = _mm_cmpeq_epi8(xmm6, xmm2);
+
+    //__asm	pxor		xmm5,				xmm5
+    _mm_xor_si128(xmm5, xmm5);
+
+    //__asm	paddb		xmm0,				xmm1
+    xmm0 = _mm_add_epi8(xmm0, xmm1);
+
+    //__asm	paddb		xmm6,				excessadd
+    xmm6 = _mm_add_epi8(xmm6, *((__m128i*)excessadd));
+
+    //__asm	paddb		xmm0,				xmm6
+    xmm0 = _mm_add_epi8(xmm0, xmm6);
+
+    //__asm	psadbw		xmm0,				xmm5
+    xmm0 = _mm_sad_epu8(xmm0, xmm5);
+
+    //__asm	movhlps		xmm1,				xmm0
+    xmm1 = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(xmm1), _mm_castsi128_ps(xmm0)));
+    
+    //__asm	paddd		xmm0,				xmm1
+    xmm0 = _mm_add_epi8(xmm0, xmm1);
+
+    //__asm	movd		eax,				xmm0
+    *((int32_t*)p1) = _mm_cvtsi128_si32(xmm0);
 }
 
 static void __stdcall processneighbours1(MotionDetectionDistData *mdd)
@@ -582,10 +683,7 @@ static void markneighbours(MotionDetectionDistData *mdd)
 
 static void markblocks1(MotionDetectionData *md, const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2)
 {
-    SSE2init()
-        mminit()
-
-        int32_t inc1 = MOTIONBLOCKHEIGHT * pitch1 - md->linewidth;
+    int32_t inc1 = MOTIONBLOCKHEIGHT * pitch1 - md->linewidth;
     int32_t inc2 = MOTIONBLOCKHEIGHT * pitch2 - md->linewidth;
     uint8_t *properties = md->blockproperties;
 
@@ -596,7 +694,7 @@ static void markblocks1(MotionDetectionData *md, const uint8_t *p1, int32_t pitc
         do {
             properties[0] = 0;
 
-            if(md->blockcompare(p1, pitch1, p2, pitch2) >= md->threshold) {
+            if(md->blockcompare(p1, pitch1, p2, pitch2, md->noiselevel) >= md->threshold) {
                 properties[0] = MOTION_FLAG1;
                 ++md->motionblocks;
             }
@@ -614,8 +712,6 @@ static void markblocks1(MotionDetectionData *md, const uint8_t *p1, int32_t pitc
 
 static void markblocks2(MotionDetectionData *md, const uint8_t *p1, const uint8_t *p2, int32_t pitch)
 {
-    SSE2init();
-
     int32_t inc = MOTIONBLOCKHEIGHT*pitch - md->linewidthSSE2;
     uint8_t *properties = md->blockproperties;
 
@@ -624,7 +720,7 @@ static void markblocks2(MotionDetectionData *md, const uint8_t *p1, const uint8_
         int32_t i = md->hblocksSSE2;
 
         do {
-            md->blockcompareSSE2(p1, p2, pitch); 
+            md->blockcompareSSE2(p1, p2, pitch, md->noiselevel); 
             properties[0] = properties[1] = 0;
 
             if(blockcompare_result[0] >= md->threshold) {
@@ -645,7 +741,7 @@ static void markblocks2(MotionDetectionData *md, const uint8_t *p1, const uint8_
         if(md->remainderSSE2) {
             properties[0] = 0;
 
-            if(md->blockcompare(p1, pitch, p2, pitch) >= md->threshold) {
+            if(md->blockcompare(p1, pitch, p2, pitch, md->noiselevel) >= md->threshold) {
                 properties[0] = MOTION_FLAG1;
                 ++md->motionblocks;
             }
@@ -662,7 +758,7 @@ static void markblocks(MotionDetectionDistData *mdd, const uint8_t *p1, int32_t 
 {
     mdd->md.motionblocks = 0;
     if(((pitch1 - pitch2) | (((uint32_t)p1) & 15) | (((uint32_t)p2) & 15)) == 0) {
-        markblocks2(&mdd->md, p1, p2, pitch1);
+        markblocks2(&mdd->md, p1, p2, pitch2);
     } else {
         markblocks1(&mdd->md, p1, pitch1, p2, pitch2);
     }
