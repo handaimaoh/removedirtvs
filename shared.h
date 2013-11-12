@@ -69,7 +69,7 @@ typedef struct {
     int32_t cthreshold;
     int32_t loops;
     int32_t restored_blocks;
-    int32_t (*vertical_diff_chroma)(const uint8_t *u, const uint8_t *v, int32_t pitch);
+    int32_t (*vertical_diff_chroma)(const uint8_t *u, const uint8_t *v, int32_t pitch, const uint8_t *noiselevel);
     void (*copy_chroma)(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch);
     MotionDetectionDistData mdd;
 } PostProcessingData;
