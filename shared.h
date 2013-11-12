@@ -2,7 +2,7 @@
 #include "VSHelper.h"
 
 #ifdef VS_TARGET_CPU_X86
-#include <intrin.h>
+#include <emmintrin.h>
 #endif
 
 #if defined(_MSC_VER)
@@ -28,8 +28,8 @@ typedef struct {
     int32_t hblocksSSE2;
     bool remainderSSE2;
     int32_t linewidthSSE2;
-    uint32_t (VS_CC *blockcompare)(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel);
-    void (VS_CC *blockcompareSSE2)(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel);
+    uint32_t (*blockcompare)(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel);
+    void (*blockcompareSSE2)(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel);
 } MotionDetectionData;
 
 typedef struct MotionDetectionDistData MotionDetectionDistData;
@@ -48,7 +48,7 @@ struct MotionDetectionDistData{
     int32_t isumline;
     int32_t isuminc1;
     int32_t isuminc2;
-    void (VS_CC *processneighbours)(MotionDetectionDistData*);
+    void (*processneighbours)(MotionDetectionDistData*);
     MotionDetectionData md;
 };
 
@@ -69,8 +69,8 @@ typedef struct {
     int32_t cthreshold;
     int32_t loops;
     int32_t restored_blocks;
-    int32_t (VS_CC *vertical_diff_chroma)(const uint8_t *u, const uint8_t *v, int32_t pitch);
-    void (VS_CC *copy_chroma)(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch);
+    int32_t (*vertical_diff_chroma)(const uint8_t *u, const uint8_t *v, int32_t pitch);
+    void (*copy_chroma)(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch);
     MotionDetectionDistData mdd;
 } PostProcessingData;
 
