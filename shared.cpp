@@ -1,69 +1,68 @@
 #include "shared.h"
 
-static inline uint32_t aligned_diff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height)
+static __forceinline uint32_t aligned_diff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height)
 {
-    __asm    pxor       xmm0,   xmm0
-    __asm    mov        eax,    incpitch
-    __asm    mov        ebx,    spitch2
-    __asm    mov        esi,    sp1
-    __asm    add        ebx,    eax
-    __asm    mov        edi,    sp2
-    __asm    add        eax,    spitch1
-    __asm    pxor       xmm1,   xmm1
-    __asm    mov        edx,    height
-    __asm    mov        ecx,    hblocks
-    __asm    align      16
-    __asm    _loop:
-    __asm    movdqa     xmm2,   [esi]
-    __asm    movdqa     xmm3,  [esi + 16]
-    __asm    psadbw     xmm2,   [edi]
-    __asm    add        esi,    2 * 16
-    __asm    psadbw     xmm3,   [edi + 16]
-    __asm    paddd      xmm0,   xmm2
-    __asm    add        edi,    2 * 16
-    __asm    paddd      xmm1,   xmm3
-    __asm    loop       _loop
-    __asm    add        esi,    eax
-    __asm    add        edi,    ebx
-    __asm    dec        edx
-    __asm    mov        ecx,    hblocks
-    __asm    jnz        _loop
-    __asm    paddd      xmm0,   xmm1
-    __asm    movd       eax,    xmm0
+    __m128i xmm0 = _mm_setzero_si128();
+    __m128i xmm1 = _mm_setzero_si128();
+
+    spitch2 += incpitch;
+    incpitch += spitch1;
+
+    int counter = hblocks;
+    do {
+        __m128i xmm2 = _mm_load_si128((__m128i*)sp1);
+        __m128i xmm3 = _mm_load_si128((__m128i*)(sp1+16));
+        __m128i xmm4 = _mm_load_si128((__m128i*)sp2);
+        __m128i xmm5 = _mm_load_si128((__m128i*)(sp2+16));
+
+        xmm2 = _mm_sad_epu8(xmm2, xmm4);
+        xmm3 = _mm_sad_epu8(xmm3, xmm5);
+        xmm0 = _mm_add_epi32(xmm0, xmm2);
+        xmm1 = _mm_add_epi32(xmm1, xmm3);
+
+        sp1 += 32;
+        sp2 += 32;
+        if (--counter > 0) {
+            continue;
+        }
+        sp1 += incpitch;
+        sp2 += spitch2;
+        counter = hblocks;
+    } while (--height > 0);
+    
+    xmm0 = _mm_add_epi32(xmm0, xmm1);
+    return (uint32_t)_mm_cvtsi128_si32(xmm0);
 }
 
-static inline uint32_t unaligned_diff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height)
+static __forceinline uint32_t unaligned_diff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height)
 {
-    __asm   pxor        xmm0,   xmm0
-    __asm   mov         eax,    incpitch
-    __asm   mov         ebx,    spitch2
-    __asm   mov         esi,    sp1
-    __asm   add         ebx,    eax
-    __asm   mov         edi,    sp2
-    __asm   add         eax,    spitch1
-    __asm   pxor        xmm1,   xmm1
-    __asm   mov         edx,    height
-    __asm   mov         ecx,    hblocks
-    __asm   align       16
-    __asm   _loop:
-    __asm   movdqu   xmm2,   [esi]
-    __asm   movdqu   xmm3,   [esi + 16]
-    __asm   add         esi,    2 * 16
-    __asm   movdqu   xmm4,   [edi]
-    __asm   movdqu   xmm5,   [edi + 16]
-    __asm   psadbw      xmm2,   xmm4
-    __asm   add         edi,    2 * 16
-    __asm   psadbw      xmm3,   xmm5
-    __asm   paddd       xmm0,   xmm2
-    __asm   paddd       xmm1,   xmm3
-    __asm   loop        _loop
-    __asm   add         esi,    eax
-    __asm   add         edi,    ebx
-    __asm   dec         edx
-    __asm   mov         ecx,    hblocks
-    __asm   jnz         _loop
-    __asm   paddd       xmm0,   xmm1
-    __asm   movd        eax,    xmm0
+    __m128i xmm0 = _mm_setzero_si128();
+    __m128i xmm1 = _mm_setzero_si128();
+
+    spitch2 += incpitch;
+    incpitch += spitch1;
+
+    int counter = hblocks;
+    do {
+        __m128i xmm2 = _mm_loadu_si128((__m128i*)sp1);
+        __m128i xmm3 = _mm_loadu_si128((__m128i*)(sp1+16));
+        __m128i xmm4 = _mm_loadu_si128((__m128i*)sp2);
+        __m128i xmm5 = _mm_loadu_si128((__m128i*)(sp2+16));
+
+        xmm2 = _mm_sad_epu8(xmm2, xmm4);
+        xmm3 = _mm_sad_epu8(xmm3, xmm3);
+        xmm0 = _mm_add_epi32(xmm0, xmm2);
+        xmm1 = _mm_add_epi32(xmm1, xmm3);
+
+        sp1 += 32;
+        sp2 += 32;
+        if (--counter > 0) {
+            continue;
+        }
+    } while (--height > 0);
+
+    xmm0 = _mm_add_epi32(xmm0, xmm1);
+    return (uint32_t)_mm_cvtsi128_si32(xmm0);
 }
 
 uint32_t gdiff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height)
