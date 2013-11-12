@@ -55,9 +55,9 @@
 #define leftbldp    (-8)
 #define leftblsp    leftbldp
 
-__declspec(align(16)) uint32_t blockcompare_result[4];
+alignas(16) uint32_t blockcompare_result[4];
 
-static void __stdcall SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
+static __forceinline void VS_CC SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
     int pitchx2 = pitch * 2;
     int pitchx3 = pitch * 3;
@@ -104,7 +104,7 @@ static void __stdcall SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32
 }
 
 // xmm7 contains already the noise level!
-static void __stdcall NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
+static __forceinline void VS_CC NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
     __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
 
@@ -206,9 +206,9 @@ static void __stdcall NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int3
     _mm_store_si128((__m128i*)blockcompare_result, xmm0);
 }
 
-static const __declspec(align(16)) uint8_t excessaddSSE2[16] = { 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8 };
+alignas(16) uint8_t excessaddSSE2[16] = { 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8 };
 
-static void __stdcall ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
+static __forceinline void VS_CC ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
     __asm   mov         eax,                noiselevel
     __asm   movdqu      xmm7,               [eax]
@@ -298,7 +298,7 @@ static void __stdcall ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2, int
     __asm	movdqa		blockcompare_result,xmm0
 }
 
-static uint32_t __stdcall SADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
+static __forceinline uint32_t VS_CC SADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
     int pitch1x3 = pitch1 * 3;
     int pitch2x3 = pitch2 * 3;
@@ -345,7 +345,7 @@ static uint32_t __stdcall SADcompare(const uint8_t *p1, int32_t pitch1, const ui
     return (uint32_t)_mm_cvtsi64_si32(mm0);
 }
 
-static __forceinline uint32_t __stdcall NSADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
+static __forceinline uint32_t VS_CC NSADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
     __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
 
@@ -420,9 +420,9 @@ static __forceinline uint32_t __stdcall NSADcompare(const uint8_t *p1, int32_t p
     return (uint32_t)_mm_cvtsi128_si32(xmm0);
 }
 
-static const __declspec(align(16)) uint8_t excessadd[16] = { 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4 };
+alignas(16) uint8_t excessadd[16] = { 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4 };
 
-static __forceinline uint32_t __stdcall ExcessPixels(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
+static __forceinline uint32_t VS_CC ExcessPixels(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
     __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
     
@@ -502,7 +502,7 @@ static __forceinline uint32_t __stdcall ExcessPixels(const uint8_t *p1, int32_t 
     return (uint32_t)_mm_cvtsi128_si32(xmm0);
 }
 
-static void __stdcall processneighbours1(MotionDetectionDistData *mdd)
+static void VS_CC processneighbours1(MotionDetectionDistData *mdd)
 {
     uint8_t *properties = mdd->md.blockproperties;
     int32_t j = mdd->md.vblocks;
@@ -521,7 +521,7 @@ static void __stdcall processneighbours1(MotionDetectionDistData *mdd)
     } while(--j);
 }
 
-static void __stdcall  processneighbours2(MotionDetectionDistData *mdd)
+static void VS_CC  processneighbours2(MotionDetectionDistData *mdd)
 {
     uint8_t *properties = mdd->md.blockproperties;
     int32_t j = mdd->md.vblocks;
@@ -543,7 +543,7 @@ static void __stdcall  processneighbours2(MotionDetectionDistData *mdd)
     } while(--j);
 }
 
-static void __stdcall  processneighbours3(MotionDetectionDistData *mdd)
+static void VS_CC  processneighbours3(MotionDetectionDistData *mdd)
 {
     uint8_t *properties = mdd->md.blockproperties;
     int32_t j = mdd->md.vblocks;
@@ -650,12 +650,6 @@ static void markneighbours(MotionDetectionDistData *mdd)
     } while(--j);
 }
 
-#define SSE2init() \
-    __asm movdqu xmm7, [ecx].noiselevel
-
-#define mminit() \
-    __asm movq mm7, [ecx].noiselevel
-
 static void markblocks1(MotionDetectionData *md, const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2)
 {
     int32_t inc1 = MOTIONBLOCKHEIGHT * pitch1 - md->linewidth;
@@ -744,7 +738,7 @@ static void markblocks(MotionDetectionDistData *mdd, const uint8_t *p1, int32_t 
     }
 }
 
-static void __stdcall copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *src, int32_t spitch)
+static __forceinline void VS_CC copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *src, int32_t spitch)
 {
     __asm	mov			esi,			src
     __asm	mov			eax,			spitch
@@ -775,7 +769,7 @@ static void __stdcall copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *src,
     __asm	movq		[edi + edx],	mm1
 }
 
-static int32_t __stdcall vertical_diff(const uint8_t *p, int32_t pitch)
+static __forceinline int32_t VS_CC vertical_diff(const uint8_t *p, int32_t pitch)
 {
     __asm	mov			eax,			p
     __asm	mov			edx,			pitch
@@ -803,7 +797,7 @@ static int32_t __stdcall vertical_diff(const uint8_t *p, int32_t pitch)
     __asm	movd		eax,			mm0
 }
 
-static int32_t __stdcall horizontal_diff(const uint8_t *p, int32_t pitch)
+static __forceinline int32_t VS_CC horizontal_diff(const uint8_t *p, int32_t pitch)
 {
     __asm	mov			edx,			p
     __asm	mov			eax,			pitch
@@ -883,7 +877,7 @@ static void postprocessing_grey(PostProcessingData *pp, uint8_t *dp, int32_t dpi
     } while(to_restore != 0);
 }
 
-static void __stdcall copy_yv12_chroma(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch)
+static __forceinline void VS_CC copy_yv12_chroma(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch)
 {
     __asm	mov			esi,			srcu
     __asm	mov			eax,			spitch
@@ -914,7 +908,7 @@ static void __stdcall copy_yv12_chroma(uint8_t *destu, uint8_t *destv, int32_t d
     __asm	movq		[edi + edx],	mm1
 }
 
-static void __stdcall copy_yuy2_chroma(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch)
+static __forceinline void VS_CC copy_yuy2_chroma(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch)
 {
     __asm	mov			esi,			srcu
     __asm	mov			eax,			spitch
@@ -969,7 +963,7 @@ static void __stdcall copy_yuy2_chroma(uint8_t *destu, uint8_t *destv, int32_t d
     __asm	movq		[edi + edx],	mm1
 }
 
-static int32_t __stdcall horizontal_diff_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
+static __forceinline int32_t VS_CC horizontal_diff_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
 {
     __asm	mov			edx,			u
     __asm	mov			eax,			pitch
@@ -982,7 +976,7 @@ static int32_t __stdcall horizontal_diff_chroma(const uint8_t *u, const uint8_t 
     __asm	movd		eax,			mm0
 }
 
-static int32_t __stdcall vertical_diff_yv12_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
+static __forceinline int32_t VS_CC vertical_diff_yv12_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
 {
     __asm	mov			eax,			u
     __asm	mov			edx,			pitch
@@ -1010,7 +1004,7 @@ static int32_t __stdcall vertical_diff_yv12_chroma(const uint8_t *u, const uint8
     __asm	movd		eax,			mm0
 }
 
-static int32_t __stdcall vertical_diff_yuy2_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
+static __forceinline int32_t VS_CC vertical_diff_yuy2_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
 {
     __asm	mov			eax,			u
     __asm	mov			edx,			pitch
@@ -1056,7 +1050,7 @@ static int32_t __stdcall vertical_diff_yuy2_chroma(const uint8_t *u, const uint8
     __asm	movd		eax,			mm0
 }
 
-static void inline colorise(uint8_t *u, uint8_t *v, int32_t pitch, int32_t height, uint32_t ucolor, uint32_t vcolor)
+static __forceinline void colorise(uint8_t *u, uint8_t *v, int32_t pitch, int32_t height, uint32_t ucolor, uint32_t vcolor)
 {
     int32_t i = height;
 
@@ -1267,9 +1261,9 @@ static void FillMotionDetectionDist(MotionDetectionDistData *mdd, const VSMap *i
         dist = 1;
     }
 
-    static void (__stdcall *neighbourproc[3])(MotionDetectionDistData*) = { processneighbours1,
-        processneighbours2,
-        processneighbours3 };
+    static void (VS_CC *neighbourproc[3])(MotionDetectionDistData*) = { processneighbours1,
+                                                                        processneighbours2,
+                                                                        processneighbours3 };
 
     mdd->blocks = mdd->md.hblocks * mdd->md.vblocks;
     mdd->isum = new uint32_t[mdd->blocks];
