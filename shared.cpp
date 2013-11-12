@@ -121,15 +121,4 @@ VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegiste
                               "pthreshold:int:opt;"\
                               "cthreshold:int:opt;"\
                               "grey:int:opt;", DupBlocksCreate, 0, plugin);
-    registerFunc("Cleanse", "input:clip;"\
-                            "grey:int:opt;"\
-                            "reduceflicker:int:opt;", CleanseCreate, 0, plugin);
-    registerFunc("MCCleanse", "input:clip;"\
-                              "previous:clip;"\
-                              "next:clip;"\
-                              "grey:int:opt;", MCCleanseCreate, 0, plugin);
-    registerFunc("BackwardCleanse", "input:clip;"\
-                                    "grey:int:opt;", BackwardCleanseCreate, 0, plugin);
-    registerFunc("ForwardCleanse", "input:clip;"\
-                                   "grey:int:opt;", ForwardCleanseCreate, 0, plugin);
 }

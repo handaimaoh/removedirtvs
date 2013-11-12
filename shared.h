@@ -2,42 +2,6 @@
 #include "VSHelper.h"
 #include "intrin.h"
 
-#define ISSE 2
-#define	ALIGNPITCH
-#define	SMOOTH2
-
-typedef struct {
-    VSNodeRef *input;
-    const VSVideoInfo *vi;
-    int32_t hblocks[3];
-    int32_t remainder[3];
-    int32_t incpitch[3];
-    bool grey;
-} GenericClenseData;
-
-typedef struct {
-    const VSFrameRef *last_frame;
-    uint32_t lnr;
-    bool reduceflicker;
-    GenericClenseData gc;
-} CleanseData;
-
-typedef struct {
-    VSNodeRef *prev_clip;
-    VSNodeRef *next_clip;
-    const VSVideoInfo *vi;
-    GenericClenseData gc;
-} BMCCleanse;
-
-typedef struct {
-    GenericClenseData gc;
-} BackwardCleanseData;
-
-typedef struct {
-    int lastnr;
-    BackwardCleanseData bc;
-} FowardCleanseData;
-
 typedef struct {
     __declspec(align(16)) uint8_t noiselevel[16];
     uint8_t *blockproperties_addr;
@@ -107,10 +71,6 @@ typedef struct {
 void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
 void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
 void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
-void VS_CC CleanseCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
-void VS_CC MCCleanseCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
-void VS_CC BackwardCleanseCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
-void VS_CC ForwardCleanseCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi);
 
 uint32_t gdiff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height);
 void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *vi, const VSAPI *vsapi);
