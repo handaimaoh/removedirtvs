@@ -1,10 +1,6 @@
 #include "VapourSynth.h"
 #include "VSHelper.h"
 
-#ifdef VS_TARGET_CPU_X86
-#include <emmintrin.h>
-#endif
-
 #if defined(_MSC_VER)
 #define _ALLOW_KEYWORD_MACROS
 #define alignas(x) __declspec(align(x))

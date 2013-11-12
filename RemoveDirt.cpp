@@ -18,6 +18,10 @@
 
 #include "shared.h"
 
+#ifdef VS_TARGET_CPU_X86
+#include <emmintrin.h>
+#endif
+
 #define MOTIONBLOCKWIDTH    8
 #define MOTIONBLOCKHEIGHT   8
 
