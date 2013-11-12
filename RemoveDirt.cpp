@@ -769,7 +769,7 @@ static __forceinline void copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *
     __asm	movq		[edi + edx],	mm1
 }
 
-static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch)
+static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, const uint8_t *noiselevel)
 {
     __asm	mov			eax,			p
     __asm	mov			edx,			pitch
@@ -835,14 +835,14 @@ static void postprocessing_grey(PostProcessingData *pp, uint8_t *dp, int32_t dpi
                     cl[0] &= ~TO_CLEAN;
 
                     if(cl[-1] == 0) {
-                        if(vertical_diff(dp2 + leftdp, dpitch) > vertical_diff(sp2 + leftsp, spitch) + pp->pthreshold) {
+                        if(vertical_diff(dp2 + leftdp, dpitch, pp->mdd.md.noiselevel) > vertical_diff(sp2 + leftsp, spitch, pp->mdd.md.noiselevel) + pp->pthreshold) {
                             ++to_restore;
                             cl[-1] = MOTION_FLAG3;
                         }
                     }
 
                     if(cl[1] == 0) {
-                        if(vertical_diff(dp2 + rightdp, dpitch) > vertical_diff(sp2 + rightsp, spitch) + pp->pthreshold) {
+                        if(vertical_diff(dp2 + rightdp, dpitch, pp->mdd.md.noiselevel) > vertical_diff(sp2 + rightsp, spitch, pp->mdd.md.noiselevel) + pp->pthreshold) {
                             ++to_restore;
                             cl[1] = MOTION_FLAG3;
                         }
@@ -976,35 +976,45 @@ static __forceinline int32_t horizontal_diff_chroma(const uint8_t *u, const uint
     __asm	movd		eax,			mm0
 }
 
-static __forceinline int32_t vertical_diff_yv12_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
+static __forceinline int32_t vertical_diff_yv12_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch, const uint8_t *noiselevel)
 {
-    __asm	mov			eax,			u
-    __asm	mov			edx,			pitch
-    __asm	pinsrw		mm0,			[eax], 0
-    __asm	lea			ecx,			[2*edx + edx]
-    __asm	pinsrw		mm1,			[eax + edx], 0
-    __asm	pinsrw		mm0,			[eax + 2*edx], 1
-    __asm	pinsrw		mm1,			[eax + ecx], 1
-    __asm	mov			eax,			v
-    __asm	pcmpeqb		mm7,			mm7
-    __asm	pinsrw		mm0,			[eax], 2
-    __asm	pinsrw		mm1,			[eax + edx], 2
-    __asm	psrlw		mm7,			8
-    __asm	pinsrw		mm0,			[eax + 2*edx], 3
-    __asm	pinsrw		mm1,			[eax + ecx], 3
-    __asm	movq		mm2,			mm0
-    __asm	movq		mm3,			mm1
-    __asm	pand		mm0,			mm7
-    __asm	psllw		mm1,			8
-    __asm	psrlw		mm2,			8
-    __asm	psubusb		mm3,			mm7
-    __asm	por			mm0,			mm1
-    __asm	por			mm2,			mm3
-    __asm	psadbw		mm0,			mm2
-    __asm	movd		eax,			mm0
+    int pitchx2 = pitch * 2;
+    int pitchx3 = pitch * 3;
+
+    __m64 mm0, mm1;
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)u), 0);
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(u+pitchx2)), 1);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(u+pitch)), 0);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(u+pitchx3)), 1);
+
+    __m64 mm7 = *((__m64*)noiselevel);
+    mm7 = _mm_cmpeq_pi8(mm7, mm7);
+
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)v), 2);
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(v+pitchx2)), 3);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)v+pitch), 2);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(v+pitchx3)), 3);
+    __m64 mm2 = mm0;
+    __m64 mm3 = mm1;
+
+    mm7 = _mm_srli_pi16(mm7, 8);
+
+    mm0 = _mm_and_si64(mm0, mm7);
+
+    mm1 = _mm_slli_pi16(mm1, 8);
+    mm2 = _mm_srli_pi16(mm2, 8);
+
+    mm3 = _mm_subs_pu8(mm3, mm7);
+
+    mm0 = _mm_or_si64(mm0, mm1);
+    mm2 = _mm_or_si64(mm2, mm3);
+
+    mm0 = _mm_sad_pu8(mm0, mm2);
+
+    return (uint32_t)_mm_cvtsi64_si32(mm0);
 }
 
-static __forceinline int32_t vertical_diff_yuy2_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
+static __forceinline int32_t vertical_diff_yuy2_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch, const uint8_t *noiselevel)
 {
     __asm	mov			eax,			u
     __asm	mov			edx,			pitch
@@ -1100,16 +1110,16 @@ static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, 
                     cl[0] &= ~TO_CLEAN;
 
                     if(cl[-1] == 0) {
-                        if((vertical_diff(dp2 + leftdp, dpitch) > vertical_diff(sp2 + leftsp, spitch) + pp->pthreshold)
-                            || (pp->vertical_diff_chroma(dpU2 + Cleftdp, dpV2 + Cleftdp, dpitchUV) > pp->vertical_diff_chroma(spU2 + Cleftsp, spV2 + Cleftsp, spitchUV) + pp->cthreshold)) {
+                        if((vertical_diff(dp2 + leftdp, dpitch, pp->mdd.md.noiselevel) > vertical_diff(sp2 + leftsp, spitch, pp->mdd.md.noiselevel) + pp->pthreshold)
+                            || (pp->vertical_diff_chroma(dpU2 + Cleftdp, dpV2 + Cleftdp, dpitchUV, pp->mdd.md.noiselevel) > pp->vertical_diff_chroma(spU2 + Cleftsp, spV2 + Cleftsp, spitchUV, pp->mdd.md.noiselevel) + pp->cthreshold)) {
                                 ++to_restore;
                                 cl[-1] = MOTION_FLAG3;
                         }
                     }
 
                     if(cl[1] == 0) {
-                        if((vertical_diff(dp2 + rightdp, dpitch) > vertical_diff(sp2 + rightsp, spitch) + pp->pthreshold)
-                            || (pp->vertical_diff_chroma(dpU2 + Crightdp, dpV2 + Crightdp, dpitchUV) > pp->vertical_diff_chroma(spU2 + Crightsp, spV2 + Crightsp, spitchUV) + pp->cthreshold)) {
+                        if((vertical_diff(dp2 + rightdp, dpitch, pp->mdd.md.noiselevel) > vertical_diff(sp2 + rightsp, spitch, pp->mdd.md.noiselevel) + pp->pthreshold)
+                            || (pp->vertical_diff_chroma(dpU2 + Crightdp, dpV2 + Crightdp, dpitchUV, pp->mdd.md.noiselevel) > pp->vertical_diff_chroma(spU2 + Crightsp, spV2 + Crightsp, spitchUV, pp->mdd.md.noiselevel) + pp->cthreshold)) {
                                 ++to_restore;
                                 cl[1] = MOTION_FLAG3;
                         }
