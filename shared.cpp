@@ -76,14 +76,10 @@ uint32_t gdiff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t 
 
 void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *vi, const VSAPI *vsapi)
 {
-    if (vi->format->id == pfYUV420P8) {
-        int32_t destPitch = vsapi->getStride(dest, 1);
-        int32_t srcPitch = vsapi->getStride(source, 1);
-        vs_bitblt(vsapi->getWritePtr(dest, 1), destPitch, vsapi->getReadPtr(source, 1), srcPitch, vi->width / 2, vi->height / 2);
-        vs_bitblt(vsapi->getWritePtr(dest, 2), destPitch, vsapi->getReadPtr(source, 2), srcPitch, vi->width / 2, vi->height / 2);
-    } else {
-        vs_bitblt(vsapi->getWritePtr(dest, 0) + vi->width, vsapi->getStride(dest, 0), vsapi->getReadPtr(source, 0) + vi->width, vsapi->getStride(source, 0), vi->width, vi->height);
-    }
+    int32_t destPitch = vsapi->getStride(dest, 1);
+    int32_t srcPitch = vsapi->getStride(source, 1);
+    vs_bitblt(vsapi->getWritePtr(dest, 1), destPitch, vsapi->getReadPtr(source, 1), srcPitch, vi->width >> vi->format->subSamplingW, vi->height >> vi->format->subSamplingH);
+    vs_bitblt(vsapi->getWritePtr(dest, 2), destPitch, vsapi->getReadPtr(source, 2), srcPitch, vi->width >> vi->format->subSamplingW, vi->height >> vi->format->subSamplingH);
 }
 
 VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin)

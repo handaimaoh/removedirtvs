@@ -1304,8 +1304,8 @@ int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFra
     const uint8_t *srcV = vsapi->getReadPtr(src, 2);
     int32_t srcPitchY = vsapi->getStride(src, 0);
     int32_t srcPitchUV = vsapi->getStride(src, 1);
-    int chroma_rowsize = vi->format->id == pfYUV420P8 ? vi->width / 2 : vi->width;
-    int chroma_height = vi->format->id == pfYUV420P8 ? vi->height / 2 : vi->height;
+    int chroma_rowsize = vi->width >> vi->format->subSamplingW;
+    int chroma_height = vi->height >> vi->format->subSamplingH;
 
     if(rd->grey) {
         postprocessing_grey(&rd->pp, destY, destPitchY, srcY, srcPitchY);
