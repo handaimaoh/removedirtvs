@@ -1025,45 +1025,63 @@ static __forceinline int32_t vertical_diff_yuy2_chroma(const uint8_t *u, const u
     int pitchx3 = pitchx2 + pitch;
     int pitchx4 = pitchx3 + pitch;
 
-    __asm	pinsrw		mm0,			[eax], 0
-    __asm	pinsrw		mm0,			[eax + 2*edx], 1
-    __asm	pinsrw		mm1,			[eax + edx], 0
-    __asm	pinsrw		mm1,			[eax + ecx], 1
-    __asm	lea			eax,			[eax + 4*edx]
-    __asm	pinsrw		mm0,			[eax], 2
-    __asm	pinsrw		mm1,			[eax + edx], 2
-    __asm	pinsrw		mm0,			[eax + 2*edx], 3
-    __asm	pinsrw		mm1,			[eax + ecx], 3
-    __asm	movq		mm2,			mm0
-    __asm	movq		mm3,			mm1
-    __asm	pand		mm0,			mm7
-    __asm	psllw		mm1,			8
-    __asm	psrlw		mm2,			8
-    __asm	psubusb		mm3,			mm7
-    __asm	mov			eax,			v
-    __asm	por			mm0,			mm1
-    __asm	por			mm2,			mm3
-    __asm	pinsrw		mm4,			[eax], 0
-    __asm	pinsrw		mm1,			[eax + edx], 0
-    __asm	pinsrw		mm4,			[eax + 2*edx], 1
-    __asm	pinsrw		mm1,			[eax + ecx], 1
-    __asm	lea			eax,			[eax + 4*edx]
-    __asm	pinsrw		mm4,			[eax], 2
-    __asm	pinsrw		mm1,			[eax + edx], 2
-    __asm	pinsrw		mm4,			[eax + 2*edx], 3
-    __asm	pinsrw		mm1,			[eax + ecx], 3
-    __asm	movq		mm6,			mm4
-    __asm	movq		mm3,			mm1
-    __asm	pand		mm4,			mm7
-    __asm	psllw		mm1,			8
-    __asm	psrlw		mm6,			8
-    __asm	psubusb		mm3,			mm7
-    __asm	por			mm4,			mm1
-    __asm	por			mm6,			mm3
-    __asm	psadbw		mm0,			mm2
-    __asm	psadbw		mm4,			mm6
-    __asm	pavgw		mm0,			mm4
-    __asm	movd		eax,			mm0
+    __m64 mm0, mm1;
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)u), 0);
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(u+pitchx2)), 1);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(u+pitch)), 0);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(u+pitchx3)), 1);
+
+    u += pitchx4;
+
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)u), 2);
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(u+pitchx2)), 3);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(u+pitch)), 2);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(u+pitchx3)), 3);
+    __m64 mm2 = mm0;
+    __m64 mm3 = mm1;
+
+    mm0 = _mm_and_si64(mm0, mm7);
+
+    mm1 = _mm_slli_pi16(mm1, 8);
+    mm2 = _mm_srli_pi16(mm2, 8);
+
+    mm3 = _mm_subs_pu8(mm3, mm7);
+
+    mm0 = _mm_or_si64(mm0, mm1);
+    mm2 = _mm_or_si64(mm2, mm3);
+
+    __m64 mm4;
+    mm4 = _mm_insert_pi16(mm4, *((int32_t*)v), 0);
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(v+pitchx2)), 1);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(v+pitch)), 0);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(v+pitchx3)), 1);
+
+    v += pitchx4;
+
+    mm4 = _mm_insert_pi16(mm4, *((int32_t*)v), 2);
+    mm4 = _mm_insert_pi16(mm4, *((int32_t*)(v+pitchx2)), 3);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(v+pitch)), 2);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(v+pitchx3)), 3);
+
+    __m64 mm6 = mm4;
+    mm3 = mm1;
+
+    mm4 = _mm_and_si64(mm4, mm7);
+
+    mm1 = _mm_slli_pi16(mm1, 8);
+    mm6 = _mm_srli_pi16(mm6, 8);
+
+    mm3 = _mm_subs_pu8(mm3, mm7);
+
+    mm4 = _mm_or_si64(mm4, mm1);
+    mm6 = _mm_or_si64(mm6, mm3);
+
+    mm0 = _mm_sad_pu8(mm0, mm2);
+    mm4 = _mm_sad_pu8(mm4, mm6);
+
+    mm0 = _mm_avg_pu16(mm0, mm4);
+
+    return _mm_cvtsi64_si32(mm0);
 }
 
 static __forceinline void colorise(uint8_t *u, uint8_t *v, int32_t pitch, int32_t height, uint32_t ucolor, uint32_t vcolor)
@@ -1384,7 +1402,6 @@ int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFra
     if(rd->show) {
         show_motion(&rd->pp, destU, destV, destPitchUV);
     }
-    __asm emms
 
     return rd->pp.restored_blocks + rd->pp.mdd.distblocks + rd->pp.mdd.md.motionblocks;
 }
