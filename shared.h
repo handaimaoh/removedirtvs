@@ -48,15 +48,6 @@ struct MotionDetectionDistData{
     MotionDetectionData md;
 };
 
-#define Cleftdp     (-1)
-#define Crightdp    3
-#define Cleftsp     Cleftdp
-#define Crightsp    Crightdp
-#define Crightbldp  4
-#define Crightblsp  Crightbldp
-#define Ctopdp      (-dpitchUV)
-#define Ctopsp      (-spitchUV)
-
 typedef struct {
     int32_t linewidthUV;
     int32_t chromaheight;

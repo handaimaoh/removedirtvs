@@ -59,6 +59,15 @@
 #define leftbldp    (-8)
 #define leftblsp    leftbldp
 
+#define Cleftdp     (-1)
+#define Crightdp    3
+#define Cleftsp     Cleftdp
+#define Crightsp    Crightdp
+#define Crightbldp  4
+#define Crightblsp  Crightbldp
+#define Ctopdp      (-dpitchUV)
+#define Ctopsp      (-spitchUV)
+
 alignas(16) uint32_t blockcompare_result[4];
 
 static __forceinline void SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
