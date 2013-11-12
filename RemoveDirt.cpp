@@ -106,90 +106,104 @@ static void __stdcall SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32
 // xmm7 contains already the noise level!
 static void __stdcall NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
-    __asm   mov         eax,                noiselevel
-    __asm   movdqu      xmm7,               [eax]
-    __asm	mov			edx,				pitch
-    __asm	mov			eax,				p1
-    __asm	lea			ecx,				[edx + 2*edx]
-    __asm	mov			ebx,				p2
-    __asm	movdqa		xmm0,				[eax]
-    __asm	movdqa		xmm2,				[eax + edx]
-    __asm	movdqa		xmm3,				xmm0
-    __asm	movdqa		xmm4,				xmm2
-    __asm	movdqa		xmm5,				[ebx]
-    __asm	movdqa		xmm6,				[ebx + edx]
-    __asm	psubusb		xmm0,				xmm5
-    __asm	psubusb		xmm2,				xmm6
-    __asm	psubusb		xmm5,				xmm3
-    __asm	psubusb		xmm6,				xmm4
-    __asm	psubusb		xmm0,				xmm7
-    __asm	psubusb		xmm2,				xmm7
-    __asm	psubusb		xmm5,				xmm7
-    __asm	psubusb		xmm6,				xmm7
-    __asm	psadbw		xmm0,				xmm5
-    __asm	psadbw		xmm6,				xmm2
-    __asm	movdqa		xmm1,				[eax + 2*edx]
-    __asm	paddd		xmm0,				xmm6
-    __asm	movdqa		xmm2,				[eax + ecx]
+    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
 
-    __asm	movdqa		xmm3,				xmm1
-    __asm	movdqa		xmm4,				xmm2
-    __asm	movdqa		xmm5,				[ebx + 2*edx]
-    __asm	movdqa		xmm6,				[ebx + ecx]
-    __asm	psubusb		xmm1,				xmm5
-    __asm	psubusb		xmm2,				xmm6
-    __asm	lea			eax,				[eax + 4*edx]
-    __asm	psubusb		xmm5,				xmm3
-    __asm	psubusb		xmm6,				xmm4
-    __asm	psubusb		xmm1,				xmm7
-    __asm	psubusb		xmm2,				xmm7
-    __asm	lea			ebx,				[ebx + 4*edx]
-    __asm	psubusb		xmm5,				xmm7
-    __asm	psubusb		xmm6,				xmm7
-    __asm	psadbw		xmm5,				xmm1
-    __asm	psadbw		xmm6,				xmm2
-    __asm	paddd		xmm0,				xmm5
-    __asm	movdqa		xmm1,				[eax]
-    __asm	paddd		xmm0,				xmm6
-    __asm	movdqa		xmm2,				[eax + edx]
+    int pitchx2 = pitch * 2;
+    int pitchx3 = pitch * 3;
+    int pitchx4 = pitch * 4;
 
-    __asm	movdqa		xmm3,				xmm1
-    __asm	movdqa		xmm4,				xmm2
-    __asm	movdqa		xmm5,				[ebx]
-    __asm	movdqa		xmm6,				[ebx + edx]
-    __asm	psubusb		xmm1,				xmm5
-    __asm	psubusb		xmm2,				xmm6
-    __asm	psubusb		xmm5,				xmm3
-    __asm	psubusb		xmm6,				xmm4
-    __asm	psubusb		xmm1,				xmm7
-    __asm	psubusb		xmm2,				xmm7
-    __asm	psubusb		xmm5,				xmm7
-    __asm	psubusb		xmm6,				xmm7
-    __asm	psadbw		xmm5,				xmm1
-    __asm	psadbw		xmm6,				xmm2
-    __asm	paddd		xmm0,				xmm5
-    __asm	movdqa		xmm1,				[eax + 2*edx]
-    __asm	paddd		xmm0,				xmm6
-    __asm	movdqa		xmm2,				[eax + ecx]
+    __m128i xmm0 = _mm_load_si128((__m128i*)p1);
+    __m128i xmm2 = _mm_load_si128((__m128i*)(p1+pitch));
+    __m128i xmm3 = xmm0;
+    __m128i xmm4 = xmm2;
+    __m128i xmm5 = _mm_load_si128((__m128i*)p2);
+    __m128i xmm6 = _mm_load_si128((__m128i*)(p2+pitch));
 
-    __asm	movdqa		xmm3,				xmm1
-    __asm	movdqa		xmm4,				xmm2
-    __asm	movdqa		xmm5,				[ebx + 2*edx]
-    __asm	movdqa		xmm6,				[ebx + ecx]
-    __asm	psubusb		xmm1,				xmm5
-    __asm	psubusb		xmm2,				xmm6
-    __asm	psubusb		xmm5,				xmm3
-    __asm	psubusb		xmm6,				xmm4
-    __asm	psubusb		xmm1,				xmm7
-    __asm	psubusb		xmm2,				xmm7
-    __asm	psubusb		xmm5,				xmm7
-    __asm	psubusb		xmm6,				xmm7
-    __asm	psadbw		xmm5,				xmm1
-    __asm	psadbw		xmm6,				xmm2
-    __asm	paddd		xmm0,				xmm5
-    __asm	paddd		xmm0,				xmm6
+    xmm0 = _mm_subs_epu8(xmm0, xmm5);
+    xmm2 = _mm_subs_epu8(xmm2, xmm6);
+    xmm5 = _mm_subs_epu8(xmm5, xmm3);
+    xmm6 = _mm_subs_epu8(xmm6, xmm4);
+    xmm0 = _mm_subs_epu8(xmm0, xmm7);
+    xmm2 = _mm_subs_epu8(xmm2, xmm7);
+    xmm5 = _mm_subs_epu8(xmm5, xmm7);
+    xmm6 = _mm_subs_epu8(xmm6, xmm7);
 
-    __asm	movdqa		blockcompare_result,xmm0
+    xmm0 = _mm_sad_epu8(xmm0, xmm5);
+    xmm6 = _mm_sad_epu8(xmm6, xmm2);
+
+    __m128i xmm1 = _mm_load_si128((__m128i*)(p1+pitchx2));
+    xmm2 = _mm_load_si128((__m128i*)(p1+pitchx3));
+    xmm3 = xmm1;
+    xmm4 = xmm2;
+
+    xmm0 = _mm_add_epi32(xmm0, xmm6);
+
+    xmm5 = _mm_load_si128((__m128i*)(p2+pitchx2));
+    xmm6 = _mm_load_si128((__m128i*)(p2+pitchx3));
+
+    xmm1 = _mm_subs_epu8(xmm1, xmm5);
+    xmm2 = _mm_subs_epu8(xmm2, xmm6);
+    xmm5 = _mm_subs_epu8(xmm5, xmm3);
+    xmm6 = _mm_subs_epu8(xmm6, xmm4);
+    xmm1 = _mm_subs_epu8(xmm1, xmm7);
+    xmm2 = _mm_subs_epu8(xmm2, xmm7);
+    xmm5 = _mm_subs_epu8(xmm5, xmm7);
+    xmm6 = _mm_subs_epu8(xmm6, xmm7);
+
+    xmm5 = _mm_sad_epu8(xmm5, xmm1);
+    xmm6 = _mm_sad_epu8(xmm6, xmm2);
+
+    xmm0 = _mm_add_epi32(xmm0, xmm5);
+    xmm0 = _mm_add_epi32(xmm0, xmm6);
+
+    p1 += pitchx4;
+    p2 += pitchx4;
+
+    xmm1 = _mm_load_si128((__m128i*)p1);
+    xmm2 = _mm_load_si128((__m128i*)(p1+pitch));
+    xmm3 = xmm1;
+    xmm4 = xmm2;
+    xmm5 = _mm_load_si128((__m128i*)p2);
+    xmm6 = _mm_load_si128((__m128i*)(p2+pitch));
+
+    xmm1 = _mm_subs_epu8(xmm1, xmm5);
+    xmm2 = _mm_subs_epu8(xmm2, xmm6);
+    xmm5 = _mm_subs_epu8(xmm5, xmm3);
+    xmm6 = _mm_subs_epu8(xmm6, xmm4);
+    xmm1 = _mm_subs_epu8(xmm1, xmm7);
+    xmm2 = _mm_subs_epu8(xmm2, xmm7);
+    xmm5 = _mm_subs_epu8(xmm5, xmm7);
+    xmm6 = _mm_subs_epu8(xmm6, xmm7);
+
+    xmm5 = _mm_sad_epu8(xmm5, xmm1);
+    xmm6 = _mm_sad_epu8(xmm6, xmm2);
+
+    xmm0 = _mm_add_epi32(xmm0, xmm5);
+    xmm0 = _mm_add_epi32(xmm0, xmm6);
+
+    xmm1 = _mm_load_si128((__m128i*)(p1+pitchx2));
+    xmm2 = _mm_load_si128((__m128i*)(p1+pitchx3));
+    xmm3 = xmm1;
+    xmm4 = xmm2;
+    xmm5 = _mm_load_si128((__m128i*)(p2+pitchx2));
+    xmm6 = _mm_load_si128((__m128i*)(p2+pitchx3));
+
+    xmm1 = _mm_subs_epu8(xmm1, xmm5);
+    xmm2 = _mm_subs_epu8(xmm2, xmm6);
+    xmm5 = _mm_subs_epu8(xmm5, xmm3);
+    xmm6 = _mm_subs_epu8(xmm6, xmm4);
+    xmm1 = _mm_subs_epu8(xmm1, xmm7);
+    xmm2 = _mm_subs_epu8(xmm2, xmm7);
+    xmm5 = _mm_subs_epu8(xmm5, xmm7);
+    xmm6 = _mm_subs_epu8(xmm6, xmm7);
+
+    xmm5 = _mm_sad_epu8(xmm5, xmm1);
+    xmm6 = _mm_sad_epu8(xmm6, xmm2);
+
+    xmm0 = _mm_add_epi32(xmm0, xmm5);
+    xmm0 = _mm_add_epi32(xmm0, xmm6);
+
+    _mm_store_si128((__m128i*)blockcompare_result, xmm0);
 }
 
 static const __declspec(align(16)) uint8_t excessaddSSE2[16] = { 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8 };
