@@ -49,7 +49,7 @@ static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int32_t n, int32_t ac
         const VSFrameRef *dest = vsapi->copyFrame(prev_frame, core);
         VSFrameRef *dest_copy = vsapi->copyFrame(dest, core);
 
-        if(RemoveDirtProcessFrame(&d->rd, dest_copy, restore_frame, prev_frame, next_frame, n, vsapi) > d->mthreshold) {
+        if(RemoveDirtProcessFrame(&d->rd, dest_copy, restore_frame, prev_frame, next_frame, n, vsapi, d->vi) > d->mthreshold) {
             vsapi->freeFrame(prev_frame);
             vsapi->freeFrame(restore_frame);
             vsapi->freeFrame(next_frame);

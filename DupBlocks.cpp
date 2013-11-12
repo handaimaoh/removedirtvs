@@ -38,7 +38,7 @@ static const VSFrameRef *VS_CC DupBlocksGetFrame(int32_t n, int32_t activationRe
             copyChroma(d->lf, restore_frame, d->vi, vsapi);
         }
 
-        if(RemoveDirtProcessFrame(&d->rd, d->lf, restore_frame, d->lf, restore_frame, n, vsapi) > d->mthreshold) {
+        if(RemoveDirtProcessFrame(&d->rd, d->lf, restore_frame, d->lf, restore_frame, n, vsapi, d->vi) > d->mthreshold) {
             return restore_frame;
         }
 
