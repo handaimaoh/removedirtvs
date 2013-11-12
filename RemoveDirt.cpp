@@ -577,30 +577,25 @@ static void markneighbours(MotionDetectionDistData *mdd)
     uint32_t *isum2 = mdd->isum;
 
     int32_t j = mdd->md.vblocks;
-    do
-    {
+    do {
         uint32_t sum = 0;
         int32_t i = mdd->dist;
-        do
-        {
+        do {
             sum += *end++;
         } while(--i);
 
         i = mdd->dist1;
-        do
-        {
+        do {
             *isum2++ = (sum += *end++);
         } while(--i);
 
         i = mdd->hint32_terior; 
-        do
-        {
+        do {
             *isum2++ = (sum += *end++ - *begin++);
         } while(--i);
 
         i = mdd->dist;
-        do
-        {
+        do {
             *isum2++ = (sum -= *begin++);
         } while(--i);
 
@@ -611,41 +606,42 @@ static void markneighbours(MotionDetectionDistData *mdd)
     uint32_t *isum1 = isum2 = mdd->isum;
     begin = mdd->md.blockproperties;
     j = mdd->md.hblocks;
-    do
-    {
+    do {
         uint32_t sum = 0;
         int32_t	i = mdd->dist;
-        do
-        {
+        do {
             sum += *isum2;
             isum2 = (uint32_t*)((char*)isum2 + mdd->isumline);
         } while(--i);
 
         i = mdd->dist1;
-        do
-        {
+        do {
             sum += *isum2;
             isum2 = (uint32_t*)((char*)isum2 + mdd->isumline);
-            if(sum > mdd->tolerance) *begin |= MOTION_FLAG2;
+            if (sum > mdd->tolerance) {
+                *begin |= MOTION_FLAG2;
+            }
             begin += mdd->md.nline;
         } while(--i);
 
         i = mdd->vint32_terior;
-        do
-        {
+        do {
             sum += *isum2 - *isum1;
             isum2 = (uint32_t*)((char*)isum2 + mdd->isumline);
             isum1 = (uint32_t*)((char*)isum1 + mdd->isumline);
-            if(sum > mdd->tolerance) *begin |= MOTION_FLAG2;
+            if(sum > mdd->tolerance) {
+                *begin |= MOTION_FLAG2;
+            }
             begin += mdd->md.nline;
         } while(--i);
 
         i = mdd->dist;
-        do
-        {
+        do {
             sum -= *isum1;
             isum1 = (uint32_t*)((char*)isum1 + mdd->isumline);
-            if(sum > mdd->tolerance) *begin |= MOTION_FLAG2;
+            if(sum > mdd->tolerance) {
+                *begin |= MOTION_FLAG2;
+            }
             begin += mdd->md.nline;
         } while(--i);	
 
@@ -1117,13 +1113,13 @@ static void show_motion(PostProcessingData *pp, uint8_t *u, uint8_t *v, int32_t 
             if(properties[0]) {
                 uint32_t u_color = u_ncolor; 
                 uint32_t v_color = v_ncolor;
-                if((properties[0] & MOTION_FLAG) != 0)
-                {
-                    u_color = u_mcolor; v_color = v_mcolor;
+                if((properties[0] & MOTION_FLAG) != 0) {
+                    u_color = u_mcolor;
+                    v_color = v_mcolor;
                 }
-                if((properties[0] & MOTION_FLAGP) != 0)
-                {
-                    u_color = u_pcolor; v_color = v_pcolor;
+                if((properties[0] & MOTION_FLAGP) != 0) {
+                    u_color = u_pcolor;
+                    v_color = v_pcolor;
                 }
                 colorise(u, v, pitchUV, pp->chromaheight, u_color, v_color);
             }
@@ -1170,13 +1166,12 @@ static void FillMotionDetection(MotionDetectionData *md, const VSMap *in, VSMap 
     md->blockcompareSSE2 = SADcompareSSE2;
     md->blockcompare = SADcompare;
 
-    if(noise > 0)
-    {
+    if(noise > 0) {
         md->blockcompareSSE2 = NSADcompareSSE2;
         md->blockcompare = NSADcompare;
         memset(md->noiselevel, noise, 16);
-        if(noisy >= 0)
-        {
+
+        if(noisy >= 0) {
             md->blockcompareSSE2 = ExcessPixelsSSE2;
             md->blockcompare = ExcessPixels;
             md->threshold = noisy;
