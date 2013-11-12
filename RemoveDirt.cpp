@@ -804,11 +804,11 @@ static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, cons
 
 static __forceinline int32_t horizontal_diff(const uint8_t *p, int32_t pitch)
 {
-    __asm	mov			edx,			p
-    __asm	mov			eax,			pitch
-    __asm	movq		mm0,			[edx]
-    __asm	psadbw		mm0,			[edx + eax]
-    __asm	movd		eax,			mm0
+    __m64 mm0 = *((__m64*)p);
+
+    mm0 = _mm_sad_pu8(mm0, *((__m64*)(p+pitch)));
+
+    return _mm_cvtsi64_si32(mm0);
 }
 
 static void postprocessing_grey(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, const uint8_t *sp, int32_t spitch)
@@ -970,15 +970,15 @@ static __forceinline void copy_yuy2_chroma(uint8_t *destu, uint8_t *destv, int32
 
 static __forceinline int32_t horizontal_diff_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
 {
-    __asm	mov			edx,			u
-    __asm	mov			eax,			pitch
-    __asm	movd		mm0,			[edx]
-    __asm	mov			ecx,			v
-    __asm	movd		mm1,			[edx + eax]
-    __asm	punpckldq	mm0,			[ecx]
-    __asm	punpckldq	mm1,			[ecx + eax]
-    __asm	psadbw		mm0,			mm1
-    __asm	movd		eax,			mm0
+    __m64 mm0 = *((__m64*)u);
+    __m64 mm1 = _mm_cvtsi32_si64(*((int32_t*)(u+pitch)));
+
+    mm0 = _mm_unpacklo_pi32(mm0, *((__m64*)v));
+    mm1 = _mm_unpacklo_pi32(mm1, *((__m64*)(v+pitch)));
+
+    mm0 = _mm_sad_pu8(mm0, mm1);
+
+    return _mm_cvtsi64_si32(mm0);
 }
 
 static __forceinline int32_t vertical_diff_yv12_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch, const uint8_t *noiselevel)
