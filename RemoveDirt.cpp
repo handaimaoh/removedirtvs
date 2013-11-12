@@ -68,7 +68,7 @@
 #define Ctopdp      (-dpitchUV)
 #define Ctopsp      (-spitchUV)
 
-alignas(16) uint32_t blockcompare_result[4];
+uint32_t ALIGNED_ARRAY(blockcompare_result, 16)[4];
 
 static __forceinline void SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
@@ -116,7 +116,6 @@ static __forceinline void SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, i
     _mm_store_si128((__m128i*)blockcompare_result, xmm0);
 }
 
-// xmm7 contains already the noise level!
 static __forceinline void NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
     __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
@@ -219,7 +218,7 @@ static __forceinline void NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, 
     _mm_store_si128((__m128i*)blockcompare_result, xmm0);
 }
 
-alignas(16) uint8_t excessaddSSE2[16] = { 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8 };
+uint8_t ALIGNED_ARRAY(excessaddSSE2, 16)[16] = { 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8 };
 
 static __forceinline void ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
@@ -436,7 +435,7 @@ static __forceinline uint32_t NSADcompare(const uint8_t *p1, int32_t pitch1, con
     return (uint32_t)_mm_cvtsi128_si32(xmm0);
 }
 
-alignas(16) uint8_t excessadd[16] = { 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4 };
+uint8_t ALIGNED_ARRAY(excessadd, 16)[16] = { 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4 };
 
 static __forceinline uint32_t ExcessPixels(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
