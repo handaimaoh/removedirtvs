@@ -805,9 +805,7 @@ static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, cons
 static __forceinline int32_t horizontal_diff(const uint8_t *p, int32_t pitch)
 {
     __m64 mm0 = *((__m64*)p);
-
     mm0 = _mm_sad_pu8(mm0, *((__m64*)(p+pitch)));
-
     return _mm_cvtsi64_si32(mm0);
 }
 
@@ -880,92 +878,6 @@ static void postprocessing_grey(PostProcessingData *pp, uint8_t *dp, int32_t dpi
 
         pp->restored_blocks += to_restore;
     } while(to_restore != 0);
-}
-
-static __forceinline void copy_yv12_chroma(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch)
-{
-    __asm	mov			esi,			srcu
-    __asm	mov			eax,			spitch
-    __asm	mov			edi,			destu
-    __asm	mov			ebx,			dpitch
-    __asm	movq		mm0,			[esi]
-    __asm	lea			ecx,			[eax + 2*eax]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	lea			edx,			[ebx + 2*ebx]
-    __asm	movq		[edi + ebx],	mm1
-
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	movq		[edi + edx],	mm1
-
-    __asm	mov			esi,			srcv
-    __asm	mov			edi,			destv
-    __asm	movq		mm0,			[esi]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	movq		[edi + ebx],	mm1
-
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	movq		[edi + edx],	mm1
-}
-
-static __forceinline void copy_yuy2_chroma(uint8_t *destu, uint8_t *destv, int32_t dpitch, const uint8_t *srcu, const uint8_t *srcv, int32_t spitch)
-{
-    __asm	mov			esi,			srcu
-    __asm	mov			eax,			spitch
-    __asm	mov			edi,			destu
-    __asm	mov			ebx,			dpitch
-    __asm	movq		mm0,			[esi]
-    __asm	lea			ecx,			[eax + 2*eax]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	lea			edx,			[ebx + 2*ebx]
-    __asm	movq		[edi + ebx],	mm1
-
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	lea			esi,			[esi + 4*eax]
-    __asm	movq		[edi + edx],	mm1
-
-    __asm	movq		mm0,			[esi]
-    __asm	lea			edi,			[edi + 4*ebx]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	movq		[edi + ebx],	mm1
-
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	movq		[edi + edx],	mm1
-
-    __asm	mov			esi,			srcv
-    __asm	mov			edi,			destv
-    __asm	movq		mm0,			[esi]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	movq		[edi + ebx],	mm1
-
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	lea			esi,			[esi + 4*eax]
-    __asm	movq		[edi + edx],	mm1
-
-    __asm	movq		mm0,			[esi]
-    __asm	lea			edi,			[edi + 4*ebx]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	movq		[edi + ebx],	mm1
-
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	movq		[edi + edx],	mm1
 }
 
 static __forceinline int32_t horizontal_diff_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
@@ -1096,7 +1008,7 @@ static __forceinline void colorise(uint8_t *u, uint8_t *v, int32_t pitch, int32_
     } while(--i);
 }
 
-static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, uint8_t *dpU, uint8_t *dpV, int32_t dpitchUV, const uint8_t *sp, int32_t spitch, const uint8_t *spU, const uint8_t *spV, int32_t spitchUV)
+static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, uint8_t *dpU, uint8_t *dpV, int32_t dpitchUV, const uint8_t *sp, int32_t spitch, const uint8_t *spU, const uint8_t *spV, int32_t spitchUV, int rowsize, int height)
 {
     int32_t bottomdp = 7 * dpitch;
     int32_t bottomsp = 7 * spitch;
@@ -1130,7 +1042,9 @@ static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, 
             do {
                 if((cl[0] & TO_CLEAN) != 0) {
                     copy8x8(dp2, dpitch, sp2, spitch);
-                    pp->copy_chroma(dpU2, dpV2, dpitchUV, spU2, spV2, spitchUV);
+                    // copy chroma planes
+                    vs_bitblt(dpU2, dpitchUV, spU2, spitchUV, rowsize, height);
+                    vs_bitblt(dpV2, dpitchUV, spV2, spitchUV, rowsize, height);
                     cl[0] &= ~TO_CLEAN;
 
                     if(cl[-1] == 0) {
@@ -1347,7 +1261,6 @@ static void FillPostProcessing(PostProcessingData *pp, const VSMap *in, VSMap *o
     FillMotionDetectionDist(&pp->mdd, in, out, vsapi, vi);
 
     pp->vertical_diff_chroma = vertical_diff_yv12_chroma;
-    pp->copy_chroma = copy_yv12_chroma;
     pp->linewidthUV = pp->mdd.md.linewidth / 2;
     pp->chromaheight = MOTIONBLOCKHEIGHT / 2;
 
@@ -1355,7 +1268,6 @@ static void FillPostProcessing(PostProcessingData *pp, const VSMap *in, VSMap *o
     {
         pp->chromaheight *= 2;
         pp->vertical_diff_chroma = vertical_diff_yuy2_chroma;
-        pp->copy_chroma = copy_yuy2_chroma;
     }
     pp->chromaheightm = pp->chromaheight - 1;
 }
@@ -1376,7 +1288,7 @@ void FillRemoveDirt(RemoveDirtData *rd, const VSMap *in, VSMap *out, const VSAPI
     FillPostProcessing(&rd->pp, in, out, vsapi, vi);
 }
 
-int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int32_t frame, const VSAPI *vsapi)
+int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int32_t frame, const VSAPI *vsapi, const VSVideoInfo *vi)
 {
     const uint8_t *nextY = vsapi->getReadPtr(next, 0);
     int32_t nextPitchY = vsapi->getStride(next, 0);
@@ -1392,11 +1304,13 @@ int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFra
     const uint8_t *srcV = vsapi->getReadPtr(src, 2);
     int32_t srcPitchY = vsapi->getStride(src, 0);
     int32_t srcPitchUV = vsapi->getStride(src, 1);
+    int chroma_rowsize = vi->format->id == pfYUV420P8 ? vi->width / 2 : vi->width;
+    int chroma_height = vi->format->id == pfYUV420P8 ? vi->height / 2 : vi->height;
 
     if(rd->grey) {
         postprocessing_grey(&rd->pp, destY, destPitchY, srcY, srcPitchY);
     } else {
-        postprocessing(&rd->pp, destY, destPitchY, destU, destV, destPitchUV, srcY, srcPitchY, srcU, srcV, srcPitchUV);
+        postprocessing(&rd->pp, destY, destPitchY, destU, destV, destPitchUV, srcY, srcPitchY, srcU, srcV, srcPitchUV, chroma_rowsize, chroma_height);
     }
 
     if(rd->show) {
