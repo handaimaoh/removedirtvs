@@ -59,36 +59,48 @@ __declspec(align(16)) uint32_t blockcompare_result[4];
 
 static void __stdcall SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
-    __asm	mov			edx,				pitch
-    __asm	mov			eax,				p1
-    __asm	lea			ecx,				[edx + 2*edx]
-    __asm	mov			ebx,				p2
-    __asm	movdqa		xmm0,				[eax]
-    __asm	movdqa		xmm1,				[eax + edx]
-    __asm	psadbw		xmm0,				[ebx]
-    __asm	psadbw		xmm1,				[ebx + edx]
-    __asm	movdqa		xmm2,				[eax + 2*edx]
-    __asm	movdqa		xmm3,				[eax + ecx]
-    __asm	psadbw		xmm2,				[ebx + 2*edx]
-    __asm	lea			eax,				[eax + 4*edx]
-    __asm	psadbw		xmm3,				[ebx + ecx]
-    __asm	paddd		xmm0,				xmm2
-    __asm	paddd		xmm1,				xmm3
-    __asm	lea			ebx,				[ebx + 4*edx]
-    __asm	movdqa		xmm2,				[eax]
-    __asm	movdqa		xmm3,				[eax + edx]
-    __asm	psadbw		xmm2,				[ebx]
-    __asm	psadbw		xmm3,				[ebx + edx]
-    __asm	paddd		xmm0,				xmm2
-    __asm	paddd		xmm1,				xmm3
-    __asm	movdqa		xmm2,				[eax + 2*edx]
-    __asm	movdqa		xmm3,				[eax + ecx]
-    __asm	psadbw		xmm2,				[ebx + 2*edx]
-    __asm	psadbw		xmm3,				[ebx + ecx]
-    __asm	paddd		xmm0,				xmm2
-    __asm	paddd		xmm1,				xmm3
-    __asm	paddd		xmm0,				xmm1
-    __asm	movdqa		blockcompare_result,xmm0
+    int pitchx2 = pitch * 2;
+    int pitchx3 = pitch * 3;
+
+    __m128i xmm0 = _mm_load_si128((__m128i*)p1);
+    __m128i xmm1 = _mm_load_si128((__m128i*)(p1+pitch));
+
+    xmm0 = _mm_sad_epu8(xmm0, *((__m128i*)p2));
+    xmm1 = _mm_sad_epu8(xmm1, *((__m128i*)(p2+pitch)));
+
+    __m128i xmm2 = _mm_load_si128((__m128i*)(p1+pitchx2));
+    __m128i xmm3 = _mm_load_si128((__m128i*)(p1+pitchx3));
+
+    xmm2 = _mm_sad_epu8(xmm2, *((__m128i*)(p2+pitchx2)));
+    xmm2 = _mm_sad_epu8(xmm2, *((__m128i*)(p2+pitchx3)));
+
+    xmm0 = _mm_add_epi32(xmm0, xmm2);
+    xmm1 = _mm_add_epi32(xmm1, xmm3);
+
+    p1 += (4*pitch);
+    p2 += (4*pitch);
+
+    xmm2 = _mm_load_si128((__m128i*)p1);
+    xmm3 = _mm_load_si128((__m128i*)(p1+pitch));
+
+    xmm2 = _mm_sad_epu8(xmm2, *((__m128i*)p2));
+    xmm3 = _mm_sad_epu8(xmm3, *((__m128i*)(p2+pitch)));
+
+    xmm0 = _mm_add_epi32(xmm0, xmm2);
+    xmm1 = _mm_add_epi32(xmm1, xmm3);
+
+    xmm2 = _mm_load_si128((__m128i*)(p1+pitchx2));
+    xmm3 = _mm_load_si128((__m128i*)(p1+pitchx3));
+
+    xmm2 = _mm_sad_epu8(xmm2, *((__m128i*)(p2+pitchx2)));
+    xmm3 = _mm_sad_epu8(xmm3, *((__m128i*)(p2+pitchx3)));
+
+    xmm0 = _mm_add_epi32(xmm0, xmm2);
+    xmm1 = _mm_add_epi32(xmm1, xmm3);
+
+    xmm0 = _mm_add_epi32(xmm0, xmm1);
+
+    _mm_store_si128((__m128i*)blockcompare_result, xmm0);
 }
 
 // xmm7 contains already the noise level!
