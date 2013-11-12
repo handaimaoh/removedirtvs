@@ -50,7 +50,7 @@ static __forceinline uint32_t unaligned_diff(const uint8_t *sp1, int32_t spitch1
         __m128i xmm5 = _mm_loadu_si128((__m128i*)(sp2+16));
 
         xmm2 = _mm_sad_epu8(xmm2, xmm4);
-        xmm3 = _mm_sad_epu8(xmm3, xmm3);
+        xmm3 = _mm_sad_epu8(xmm3, xmm5);
         xmm0 = _mm_add_epi32(xmm0, xmm2);
         xmm1 = _mm_add_epi32(xmm1, xmm3);
 
