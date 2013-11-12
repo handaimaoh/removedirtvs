@@ -148,6 +148,10 @@ set_before:
     }
 
     RestoreMotionBlocksData *data = (RestoreMotionBlocksData *)malloc(sizeof(d));
+    if (!data) {
+        vsapi->setError(out, "Could not allocate RestoreMotionBlocksData");
+        return;
+    }
     *data = d;
 
     vsapi->createFilter(in, out, "RestoreMotionBlocks", RestoreMotionBlocksInit, RestoreMotionBlocksGetFrame, RestoreMotionBlocksFree, fmSerial, 0, data, core);

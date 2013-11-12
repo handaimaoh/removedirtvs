@@ -81,6 +81,10 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
     d.mthreshold = (d.mthreshold * d.rd.pp.mdd.md.hblocks * d.rd.pp.mdd.md.vblocks) / 100;
 
     DupBlocksData *data = (DupBlocksData *)malloc(sizeof(d));
+    if (!data) {
+        vsapi->setError(out, "Could not allocate DupBlocksData");
+        return;
+    }
     *data = d;
 
     vsapi->createFilter(in, out, "DupBlocks", DupBlocksInit, DupBlocksGetFrame, DupBlocksFree, fmSerial, 0, data, core);

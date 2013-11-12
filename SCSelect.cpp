@@ -136,6 +136,10 @@ void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *c
     d.incpitch = d.hblocks * (-2 * 16);
 
     SCSelectData *data = (SCSelectData *)malloc(sizeof(d));
+    if (!data) {
+        vsapi->setError(out, "Could not allocate SCSelectData");
+        return;
+    }
     *data = d;
 
     vsapi->createFilter(in, out, "SCSelect", SCSelectInit, SCSelectGetFrame, SCSelectFree, fmSerial, 0, data, core);
