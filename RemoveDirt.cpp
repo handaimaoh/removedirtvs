@@ -753,33 +753,40 @@ static void markblocks(MotionDetectionDistData *mdd, const uint8_t *p1, int32_t 
 
 static __forceinline void copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *src, int32_t spitch)
 {
-    __asm	mov			esi,			src
-    __asm	mov			eax,			spitch
-    __asm	mov			edi,			dest
-    __asm	mov			ebx,			dpitch
-    __asm	movq		mm0,			[esi]
-    __asm	lea			ecx,			[eax + 2*eax]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	lea			edx,			[ebx + 2*ebx]
-    __asm	movq		[edi + ebx],	mm1
+    int spitchx2 = spitch + spitch;
+    int spitchx3 = spitchx2 + spitch;
+    int spitchx4 = spitchx3 + spitch;
 
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	lea			esi,			[esi + 4*eax]
-    __asm	movq		[edi + edx],	mm1
+    int dpitchx2 = dpitch + dpitch;
+    int dpitchx3 = dpitchx2 + dpitch;
+    int dpitchx4 = dpitchx3 + dpitch;
 
-    __asm	movq		mm0,			[esi]
-    __asm	lea			edi,			[edi + 4*ebx]
-    __asm	movq		mm1,			[esi + eax]
-    __asm	movq		[edi],			mm0
-    __asm	movq		[edi + ebx],	mm1
+    __m64 mm0 = *((__m64*)src);
+    __m64 mm1 = *((__m64*)(src+spitch));
 
-    __asm	movq		mm0,			[esi + 2*eax]
-    __asm	movq		mm1,			[esi + ecx]
-    __asm	movq		[edi + 2*ebx],	mm0
-    __asm	movq		[edi + edx],	mm1
+    *((uint32_t*)dest) = (uint32_t)_mm_cvtsi64_si32(mm0);
+    *((uint32_t*)(dest+dpitch)) = (uint32_t)_mm_cvtsi64_si32(mm1);
+
+    mm0 = *((__m64*)(src+spitchx2));
+    mm1 = *((__m64*)(src+spitchx3));
+
+    *((uint32_t*)(dest+dpitchx2)) = (uint32_t)_mm_cvtsi64_si32(mm0);
+    *((uint32_t*)(dest+dpitchx3)) = (uint32_t)_mm_cvtsi64_si32(mm1);
+
+    src += spitchx4;
+    dest += dpitchx4;
+
+    mm0 = *((__m64*)(src));
+    mm1 = *((__m64*)(src+spitch));
+
+    *((uint32_t*)dest) = (uint32_t)_mm_cvtsi64_si32(mm0);
+    *((uint32_t*)(dest+dpitch)) = (uint32_t)_mm_cvtsi64_si32(mm1);
+
+    mm0 = *((__m64*)(src+spitchx2));
+    mm1 = *((__m64*)(src+spitchx3));
+
+    *((uint32_t*)(dest+dpitchx2)) = (uint32_t)_mm_cvtsi64_si32(mm0);
+    *((uint32_t*)(dest+dpitchx3)) = (uint32_t)_mm_cvtsi64_si32(mm1);
 }
 
 static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, const uint8_t *noiselevel)
