@@ -72,8 +72,8 @@ uint32_t ALIGNED_ARRAY(blockcompare_result, 16)[4];
 
 static __forceinline void SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
-    int pitchx2 = pitch * 2;
-    int pitchx3 = pitchx2 + pitch;
+    int32_t pitchx2 = pitch * 2;
+    int32_t pitchx3 = pitchx2 + pitch;
 
     __m128i xmm0 = _mm_load_si128((__m128i*)p1);
     __m128i xmm1 = _mm_load_si128((__m128i*)(p1+pitch));
@@ -120,9 +120,9 @@ static __forceinline void NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, 
 {
     __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
 
-    int pitchx2 = pitch * 2;
-    int pitchx3 = pitchx2 + pitch;
-    int pitchx4 = pitchx3 + pitch;
+    int32_t pitchx2 = pitch * 2;
+    int32_t pitchx3 = pitchx2 + pitch;
+    int32_t pitchx4 = pitchx3 + pitch;
 
     __m128i xmm0 = _mm_load_si128((__m128i*)p1);
     __m128i xmm2 = _mm_load_si128((__m128i*)(p1+pitch));
@@ -312,12 +312,12 @@ static __forceinline void ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2,
 
 static __forceinline uint32_t SADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
-    int pitch1x2 = pitch1 + pitch1;
-    int pitch1x3 = pitch1x2 + pitch1;
-    int pitch1x4 = pitch1x3 + pitch1;
-    int pitch2x2 = pitch2 + pitch2;
-    int pitch2x3 = pitch2x2 + pitch2;
-    int pitch2x4 = pitch2x3 + pitch2;
+    int32_t pitch1x2 = pitch1 + pitch1;
+    int32_t pitch1x3 = pitch1x2 + pitch1;
+    int32_t pitch1x4 = pitch1x3 + pitch1;
+    int32_t pitch2x2 = pitch2 + pitch2;
+    int32_t pitch2x3 = pitch2x2 + pitch2;
+    int32_t pitch2x4 = pitch2x3 + pitch2;
 
     __m64 mm0 = *((__m64*)p1);
     __m64 mm1 = *((__m64*)(p1+pitch1));
@@ -363,12 +363,12 @@ static __forceinline uint32_t NSADcompare(const uint8_t *p1, int32_t pitch1, con
 {
     __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
 
-    int pitch1x2 = pitch1 + pitch1;
-    int pitch1x3 = pitch1x2 + pitch1;
-    int pitch1x4 = pitch1x3 + pitch1;
-    int pitch2x2 = pitch2 + pitch2;
-    int pitch2x3 = pitch2x2 + pitch2;
-    int pitch2x4 = pitch2x3 + pitch2;
+    int32_t pitch1x2 = pitch1 + pitch1;
+    int32_t pitch1x3 = pitch1x2 + pitch1;
+    int32_t pitch1x4 = pitch1x3 + pitch1;
+    int32_t pitch2x2 = pitch2 + pitch2;
+    int32_t pitch2x3 = pitch2x2 + pitch2;
+    int32_t pitch2x4 = pitch2x3 + pitch2;
 
     __m128i xmm0;
     xmm0 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm0), (__m64 *)(p1)), (__m64 *)(p1+pitch1x2)));
@@ -441,12 +441,12 @@ static __forceinline uint32_t ExcessPixels(const uint8_t *p1, int32_t pitch1, co
 {
     __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
     
-    int pitch1x2 = pitch1 + pitch1;
-    int pitch1x3 = pitch1x2 + pitch1;
-    int pitch1x4 = pitch1x3 + pitch1;
-    int pitch2x2 = pitch2 + pitch2;
-    int pitch2x3 = pitch2x2 + pitch2;
-    int pitch2x4 = pitch2x3 + pitch2;
+    int32_t pitch1x2 = pitch1 + pitch1;
+    int32_t pitch1x3 = pitch1x2 + pitch1;
+    int32_t pitch1x4 = pitch1x3 + pitch1;
+    int32_t pitch2x2 = pitch2 + pitch2;
+    int32_t pitch2x3 = pitch2x2 + pitch2;
+    int32_t pitch2x4 = pitch2x3 + pitch2;
 
     __m128i xmm0;
     xmm0 = _mm_castps_si128(_mm_loadh_pi(_mm_loadl_pi(_mm_castsi128_ps(xmm0), (__m64 *)(p1)), (__m64 *)(p1+pitch1x2)));
@@ -753,13 +753,13 @@ static void markblocks(MotionDetectionDistData *mdd, const uint8_t *p1, int32_t 
 
 static __forceinline void copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *src, int32_t spitch)
 {
-    int spitchx2 = spitch + spitch;
-    int spitchx3 = spitchx2 + spitch;
-    int spitchx4 = spitchx3 + spitch;
+    int32_t spitchx2 = spitch + spitch;
+    int32_t spitchx3 = spitchx2 + spitch;
+    int32_t spitchx4 = spitchx3 + spitch;
 
-    int dpitchx2 = dpitch + dpitch;
-    int dpitchx3 = dpitchx2 + dpitch;
-    int dpitchx4 = dpitchx3 + dpitch;
+    int32_t dpitchx2 = dpitch + dpitch;
+    int32_t dpitchx3 = dpitchx2 + dpitch;
+    int32_t dpitchx4 = dpitchx3 + dpitch;
 
     __m64 mm0 = *((__m64*)src);
     __m64 mm1 = *((__m64*)(src+spitch));
@@ -791,30 +791,44 @@ static __forceinline void copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *
 
 static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, const uint8_t *noiselevel)
 {
-    __asm	mov			eax,			p
-    __asm	mov			edx,			pitch
-    __asm	pinsrw		mm0,			[eax], 0
-    __asm	lea			ecx,			[2*edx + edx]
-    __asm	pinsrw		mm1,			[eax + edx], 0
-    __asm	pinsrw		mm0,			[eax + 2*edx], 1
-    __asm	pinsrw		mm1,			[eax + ecx], 1
-    __asm	lea			eax,			[eax + 4*edx]
-    __asm	pcmpeqb		mm7,			mm7
-    __asm	pinsrw		mm0,			[eax], 2
-    __asm	pinsrw		mm1,			[eax + edx], 2
-    __asm	psrlw		mm7,			8
-    __asm	pinsrw		mm0,			[eax + 2*edx], 3
-    __asm	pinsrw		mm1,			[eax + ecx], 3
-    __asm	movq		mm2,			mm0
-    __asm	movq		mm3,			mm1
-    __asm	pand		mm0,			mm7
-    __asm	psllw		mm1,			8
-    __asm	psrlw		mm2,			8
-    __asm	psubusb		mm3,			mm7
-    __asm	por			mm0,			mm1
-    __asm	por			mm2,			mm3
-    __asm	psadbw		mm0,			mm2
-    __asm	movd		eax,			mm0
+    int32_t pitchx2 = pitch + pitch;
+    int32_t pitchx3 = pitchx2 + pitch;
+    int32_t pitchx4 = pitchx3 + pitch;
+    __m64 mm7 = *((__m64*)noiselevel);
+
+    __m64 mm0, mm1;
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)p), 0);
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(p+pitchx2)), 1);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitch)), 0);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitchx3)), 1);
+
+    mm7 = _mm_cmpeq_pi8(mm7, mm7);
+    
+    p += pitchx4;
+
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)p), 2);
+    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(p+pitchx2)), 3);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitch)), 2);
+    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitchx3)), 3);
+
+    __m64 mm2 = mm0;
+    __m64 mm3 = mm1;
+
+    mm7 = _mm_srli_pi16(mm7, 8);
+
+    mm0 = _mm_and_si64(mm0, mm7);
+
+    mm1 = _mm_slli_pi16(mm1, 8);
+    mm2 = _mm_srli_pi16(mm2, 8);
+
+    mm3 = _mm_subs_pu8(mm3, mm7);
+
+    mm0 = _mm_or_si64(mm0, mm1);
+    mm2 = _mm_or_si64(mm2, mm3);
+
+    mm0 = _mm_sad_pu8(mm0, mm2);
+
+    return _mm_cvtsi64_si32(mm0);
 }
 
 static __forceinline int32_t horizontal_diff(const uint8_t *p, int32_t pitch)
@@ -911,8 +925,8 @@ static __forceinline int32_t horizontal_diff_chroma(const uint8_t *u, const uint
 static __forceinline int32_t vertical_diff_yv12_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch, const uint8_t *noiselevel)
 {
     __m64 mm7 = *((__m64*)noiselevel);
-    int pitchx2 = pitch + pitch;
-    int pitchx3 = pitchx2 + pitch;
+    int32_t pitchx2 = pitch + pitch;
+    int32_t pitchx3 = pitchx2 + pitch;
 
     __m64 mm0, mm1;
     mm0 = _mm_insert_pi16(mm0, *((int32_t*)u), 0);
@@ -948,9 +962,9 @@ static __forceinline int32_t vertical_diff_yv12_chroma(const uint8_t *u, const u
 static __forceinline int32_t vertical_diff_yuy2_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch, const uint8_t *noiselevel)
 {
     __m64 mm7 = *((__m64*)noiselevel);
-    int pitchx2 = pitch + pitch;
-    int pitchx3 = pitchx2 + pitch;
-    int pitchx4 = pitchx3 + pitch;
+    int32_t pitchx2 = pitch + pitch;
+    int32_t pitchx3 = pitchx2 + pitch;
+    int32_t pitchx4 = pitchx3 + pitch;
 
     __m64 mm0, mm1;
     mm0 = _mm_insert_pi16(mm0, *((int32_t*)u), 0);
@@ -1023,7 +1037,7 @@ static __forceinline void colorise(uint8_t *u, uint8_t *v, int32_t pitch, int32_
     } while(--i);
 }
 
-static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, uint8_t *dpU, uint8_t *dpV, int32_t dpitchUV, const uint8_t *sp, int32_t spitch, const uint8_t *spU, const uint8_t *spV, int32_t spitchUV, int rowsize, int height)
+static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, uint8_t *dpU, uint8_t *dpV, int32_t dpitchUV, const uint8_t *sp, int32_t spitch, const uint8_t *spU, const uint8_t *spV, int32_t spitchUV, int32_t rowsize, int32_t height)
 {
     int32_t bottomdp = 7 * dpitch;
     int32_t bottomsp = 7 * spitch;
@@ -1318,8 +1332,8 @@ int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFra
     const uint8_t *srcV = vsapi->getReadPtr(src, 2);
     int32_t srcPitchY = vsapi->getStride(src, 0);
     int32_t srcPitchUV = vsapi->getStride(src, 1);
-    int chroma_rowsize = vi->width >> vi->format->subSamplingW;
-    int chroma_height = vi->height >> vi->format->subSamplingH;
+    int32_t chroma_rowsize = vi->width >> vi->format->subSamplingW;
+    int32_t chroma_height = vi->height >> vi->format->subSamplingH;
 
     if(rd->grey) {
         postprocessing_grey(&rd->pp, destY, destPitchY, srcY, srcPitchY);
