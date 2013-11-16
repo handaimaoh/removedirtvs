@@ -143,5 +143,5 @@ void VS_CC SCSelectCreate(const VSMap *in, VSMap *out, void *userData, VSCore *c
     }
     *data = d;
 
-    vsapi->createFilter(in, out, "SCSelect", SCSelectInit, SCSelectGetFrame, SCSelectFree, fmSerial, 0, data, core);
+    vsapi->createFilter(in, out, "SCSelect", SCSelectInit, SCSelectGetFrame, SCSelectFree, fmParallel, 0, data, core);
 };
