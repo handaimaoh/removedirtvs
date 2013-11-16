@@ -11,7 +11,7 @@
 #endif
 
 typedef struct {
-    __declspec(align(16)) uint8_t noiselevel[16];
+    uint8_t ALIGNED_ARRAY(noiselevel, 16)[16];
     uint8_t *blockproperties_addr;
     uint32_t threshold;
     int32_t pline;
