@@ -88,7 +88,7 @@ void copyChroma(VSFrameRef *dest, const VSFrameRef *source, const VSVideoInfo *v
 
 VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin)
 {
-    configFunc("com.fakeurl.vsremovedirt", "vsrd", "RemoveDirt VapourSynth Port", VAPOURSYNTH_API_VERSION, 1, plugin);
+    configFunc("com.fakeurl.removedirtvs", "rdvs", "RemoveDirt VapourSynth Port", VAPOURSYNTH_API_VERSION, 1, plugin);
     registerFunc("SCSelect", "input:clip;"\
                              "sceneBegin:clip;"\
                              "sceneEnd:clip;"\
