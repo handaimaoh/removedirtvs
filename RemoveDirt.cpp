@@ -118,7 +118,7 @@ static __forceinline void SADcompareSSE2(const uint8_t *p1, const uint8_t *p2, i
 
 static __forceinline void NSADcompareSSE2(const uint8_t *p1, const uint8_t *p2, int32_t pitch, const uint8_t *noiselevel)
 {
-    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
+    __m128i xmm7 = *((__m128i*)noiselevel);
 
     int32_t pitchx2 = pitch * 2;
     int32_t pitchx3 = pitchx2 + pitch;
@@ -226,7 +226,7 @@ static __forceinline void ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2,
     int32_t pitchx3 = pitchx2 + pitch;
     int32_t pitchx4 = pitchx3 + pitch;
 
-    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
+    __m128i xmm7 = *((__m128i*)noiselevel);
 
     __m128i xmm0 = *((__m128i*)p1);
     __m128i xmm2 = *((__m128i*)(p1+pitch));
@@ -379,7 +379,7 @@ static __forceinline uint32_t SADcompare(const uint8_t *p1, int32_t pitch1, cons
 
 static __forceinline uint32_t NSADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
-    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
+    __m128i xmm7 = *((__m128i*)noiselevel);
 
     int32_t pitch1x2 = pitch1 + pitch1;
     int32_t pitch1x3 = pitch1x2 + pitch1;
@@ -457,7 +457,7 @@ uint8_t ALIGNED_ARRAY(excessadd, 16)[16] = { 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4 };
 
 static __forceinline uint32_t ExcessPixels(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
 {
-    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
+    __m128i xmm7 = *((__m128i*)noiselevel);
     
     int32_t pitch1x2 = pitch1 + pitch1;
     int32_t pitch1x3 = pitch1x2 + pitch1;
