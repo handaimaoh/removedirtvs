@@ -99,25 +99,25 @@ VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegiste
                                         "neighbour:clip:opt;"\
                                         "neighbour2:clip:opt;"\
                                         "alternative:clip:opt;"\
-                                        "gmthreshold:int32_t:opt;"\
-                                        "mthreshold:int32_t:opt;"\
-                                        "noise:int32_t:opt;"\
-                                        "noisy:int32_t:opt;"\
-                                        "dist:int32_t:opt;"\
-                                        "tolerance:int32_t:opt;"\
-                                        "dmode:int32_t:opt;"\
-                                        "pthreshold:int32_t:opt;"\
-                                        "cthreshold:int32_t:opt;"\
-                                        "grey:int32_t:opt;", RestoreMotionBlocksCreate, 0, plugin);
+                                        "gmthreshold:int:opt;"\
+                                        "mthreshold:int:opt;"\
+                                        "noise:int:opt;"\
+                                        "noisy:int:opt;"\
+                                        "dist:int:opt;"\
+                                        "tolerance:int:opt;"\
+                                        "dmode:int:opt;"\
+                                        "pthreshold:int:opt;"\
+                                        "cthreshold:int:opt;"\
+                                        "grey:int:opt;", RestoreMotionBlocksCreate, 0, plugin);
     registerFunc("DupBlocks", "input:clip;"\
-                              "gmthreshold:int32_t:opt;"\
-                              "mthreshold:int32_t:opt;"\
-                              "noise:int32_t:opt;"\
-                              "noisy:int32_t:opt;"\
-                              "dist:int32_t:opt;"\
-                              "tolerance:int32_t:opt;"\
-                              "dmode:int32_t:opt;"\
-                              "pthreshold:int32_t:opt;"\
-                              "cthreshold:int32_t:opt;"\
-                              "grey:int32_t:opt;", DupBlocksCreate, 0, plugin);
+                              "gmthreshold:int:opt;"\
+                              "mthreshold:int:opt;"\
+                              "noise:int:opt;"\
+                              "noisy:int:opt;"\
+                              "dist:int:opt;"\
+                              "tolerance:int:opt;"\
+                              "dmode:int:opt;"\
+                              "pthreshold:int:opt;"\
+                              "cthreshold:int:opt;"\
+                              "grey:int:opt;", DupBlocksCreate, 0, plugin);
 }
