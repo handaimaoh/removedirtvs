@@ -226,7 +226,7 @@ static __forceinline void ExcessPixelsSSE2(const uint8_t *p1, const uint8_t *p2,
     int32_t pitchx3 = pitchx2 + pitch;
     int32_t pitchx4 = pitchx3 + pitch;
 
-    __m128i xmm7 = *((__m128i*)noiselevel);
+    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
 
     __m128i xmm0 = *((__m128i*)p1);
     __m128i xmm2 = *((__m128i*)(p1+pitch));

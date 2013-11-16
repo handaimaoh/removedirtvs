@@ -41,6 +41,7 @@ static const VSFrameRef *VS_CC SCSelectGetFrame(int32_t n, int32_t activationRea
             }
             vsapi->requestFrameFilter(n, d->sceneBegin, frameCtx);
             vsapi->requestFrameFilter(n, d->sceneEnd, frameCtx);
+            vsapi->requestFrameFilter(n, d->globalMotion, frameCtx);
         }
     } else if (activationReason == arAllFramesReady) {
         VSNodeRef *selected;
