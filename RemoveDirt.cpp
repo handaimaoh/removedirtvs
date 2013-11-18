@@ -1021,7 +1021,7 @@ static __forceinline void colorise(uint8_t *u, uint8_t *v, int32_t pitch, int32_
 
 static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, uint8_t *dpU, uint8_t *dpV, int32_t dpitchUV,
                                              const uint8_t *sp, int32_t spitch, const uint8_t *spU, const uint8_t *spV, int32_t spitchUV,
-                                             int32_t rowsize, int32_t height, int32_t rowsizeUV, int32_t heightUV)
+                                             int32_t heightUV)
 {
     int32_t bottomdp = 7 * dpitch;
     int32_t bottomsp = 7 * spitch;
@@ -1055,8 +1055,8 @@ static void postprocessing(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, 
             do {
                 if((cl[0] & TO_CLEAN) != 0) {
                     vs_bitblt(dp2, dpitch, sp2, spitch, 8, 8);
-                    vs_bitblt(dpU2, dpitchUV, spU2, spitchUV, 8, 4);
-                    vs_bitblt(dpV2, dpitchUV, spV2, spitchUV, 8, 4);
+                    vs_bitblt(dpU2, dpitchUV, spU2, spitchUV, 8, heightUV);
+                    vs_bitblt(dpV2, dpitchUV, spV2, spitchUV, 8, heightUV);
                     cl[0] &= ~TO_CLEAN;
 
                     if(cl[-1] == 0) {
@@ -1315,15 +1315,12 @@ int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFra
     const uint8_t *srcV = vsapi->getReadPtr(src, 2);
     int32_t srcPitchY = vsapi->getStride(src, 0);
     int32_t srcPitchUV = vsapi->getStride(src, 1);
-    int32_t rowsizeY = vsapi->getFrameWidth(src, 0);
-    int32_t heightY = vsapi->getFrameHeight(src, 0);
-    int32_t rowsizeUV = vsapi->getFrameWidth(src, 1);
-    int32_t heightUV = vsapi->getFrameHeight(src, 1);
+    int32_t heightUV = vi->format->id == pfYUV422P8 ? 8 : 4;
 
     if(rd->grey) {
         postprocessing_grey(&rd->pp, destY, destPitchY, srcY, srcPitchY);
     } else {
-        postprocessing(&rd->pp, destY, destPitchY, destU, destV, destPitchUV, srcY, srcPitchY, srcU, srcV, srcPitchUV, rowsizeY, heightY, rowsizeUV, heightUV);
+        postprocessing(&rd->pp, destY, destPitchY, destU, destV, destPitchUV, srcY, srcPitchY, srcU, srcV, srcPitchUV, heightUV);
     }
 
     if(rd->show) {
