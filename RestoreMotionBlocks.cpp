@@ -33,35 +33,37 @@ static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int32_t n, int32_t ac
         if ((n + d->before_offset < 0) || (n + d->after_offset > d->lastframe)) {
             vsapi->requestFrameFilter(n, d->alternative, frameCtx);
         } else {
+            vsapi->requestFrameFilter(n, d->input, frameCtx);
             vsapi->requestFrameFilter(n + d->before_offset, d->before, frameCtx);
             vsapi->requestFrameFilter(n + d->after_offset, d->after, frameCtx);
             vsapi->requestFrameFilter(n, d->restore, frameCtx);
+            vsapi->requestFrameFilter(n, d->alternative, frameCtx);
         }
     } else if (activationReason == arAllFramesReady) {
         if ((n + d->before_offset < 0) || (n + d->after_offset > d->lastframe)) {
             return vsapi->getFrameFilter(n, d->alternative, frameCtx);
         }
 
+        const VSFrameRef *src_frame = vsapi->getFrameFilter(n, d->input, frameCtx);
         const VSFrameRef *prev_frame = vsapi->getFrameFilter(n + d->before_offset, d->before, frameCtx);
         const VSFrameRef *restore_frame = vsapi->getFrameFilter(n, d->restore, frameCtx);
         const VSFrameRef *next_frame = vsapi->getFrameFilter(n + d->after_offset, d->after, frameCtx);
 
-        const VSFrameRef *dest = vsapi->copyFrame(prev_frame, core);
-        VSFrameRef *dest_copy = vsapi->copyFrame(dest, core);
+        VSFrameRef *dest_frame = vsapi->copyFrame(src_frame, core);
 
-        if(RemoveDirtProcessFrame(&d->rd, dest_copy, restore_frame, prev_frame, next_frame, n, vsapi, d->vi) > d->mthreshold) {
+        if(RemoveDirtProcessFrame(&d->rd, dest_frame, restore_frame, prev_frame, next_frame, n, vsapi, d->vi) > d->mthreshold) {
+            vsapi->freeFrame(src_frame);
             vsapi->freeFrame(prev_frame);
             vsapi->freeFrame(restore_frame);
             vsapi->freeFrame(next_frame);
-            vsapi->freeFrame(dest);
-            vsapi->freeFrame(dest_copy);
+            vsapi->freeFrame(dest_frame);
             return vsapi->getFrameFilter(n, d->alternative, frameCtx);
         } else {
+            vsapi->freeFrame(src_frame);
             vsapi->freeFrame(prev_frame);
             vsapi->freeFrame(restore_frame);
             vsapi->freeFrame(next_frame);
-            vsapi->freeFrame(dest);
-            return dest_copy;
+            return dest_frame;
         }
     }
 
