@@ -2,6 +2,8 @@
 
 #ifdef VS_TARGET_CPU_X86
 #include <emmintrin.h>
+#else
+# error "Please specify VS_TARGET_CPU_X86 to build"
 #endif
 
 static __forceinline uint32_t aligned_diff(const uint8_t *sp1, int32_t spitch1, const uint8_t *sp2, int32_t spitch2, int32_t hblocks, int32_t incpitch, int32_t height)

@@ -20,6 +20,8 @@
 
 #ifdef VS_TARGET_CPU_X86
 #include <emmintrin.h>
+#else
+# error "Please specify VS_TARGET_CPU_X86 to build"
 #endif
 
 #define MOTIONBLOCKWIDTH    8
