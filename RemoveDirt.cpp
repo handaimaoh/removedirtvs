@@ -771,44 +771,6 @@ static void markblocks(MotionDetectionDistData *mdd, const uint8_t *p1, int32_t 
     }
 }
 
-static __forceinline void copy8x8(uint8_t *dest, int32_t dpitch, const uint8_t *src, int32_t spitch)
-{
-    int32_t spitchx2 = spitch + spitch;
-    int32_t spitchx3 = spitchx2 + spitch;
-    int32_t spitchx4 = spitchx3 + spitch;
-
-    int32_t dpitchx2 = dpitch + dpitch;
-    int32_t dpitchx3 = dpitchx2 + dpitch;
-    int32_t dpitchx4 = dpitchx3 + dpitch;
-
-    __m64 mm0 = *((__m64*)src);
-    __m64 mm1 = *((__m64*)(src+spitch));
-
-    *((uint32_t*)dest) = (uint32_t)_mm_cvtsi64_si32(mm0);
-    *((uint32_t*)(dest+dpitch)) = (uint32_t)_mm_cvtsi64_si32(mm1);
-
-    mm0 = *((__m64*)(src+spitchx2));
-    mm1 = *((__m64*)(src+spitchx3));
-
-    *((uint32_t*)(dest+dpitchx2)) = (uint32_t)_mm_cvtsi64_si32(mm0);
-    *((uint32_t*)(dest+dpitchx3)) = (uint32_t)_mm_cvtsi64_si32(mm1);
-
-    src += spitchx4;
-    dest += dpitchx4;
-
-    mm0 = *((__m64*)(src));
-    mm1 = *((__m64*)(src+spitch));
-
-    *((uint32_t*)dest) = (uint32_t)_mm_cvtsi64_si32(mm0);
-    *((uint32_t*)(dest+dpitch)) = (uint32_t)_mm_cvtsi64_si32(mm1);
-
-    mm0 = *((__m64*)(src+spitchx2));
-    mm1 = *((__m64*)(src+spitchx3));
-
-    *((uint32_t*)(dest+dpitchx2)) = (uint32_t)_mm_cvtsi64_si32(mm0);
-    *((uint32_t*)(dest+dpitchx3)) = (uint32_t)_mm_cvtsi64_si32(mm1);
-}
-
 static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, const uint8_t *noiselevel)
 {
     int32_t pitchx2 = pitch + pitch;
@@ -883,7 +845,7 @@ static void postprocessing_grey(PostProcessingData *pp, uint8_t *dp, int32_t dpi
 
             do {
                 if((cl[0] & TO_CLEAN) != 0) {
-                    copy8x8(dp2, dpitch, sp2, spitch);
+                    vs_bitblt(dp2, dpitch, sp2, spitch, 8, 8);
                     cl[0] &= ~TO_CLEAN;
 
                     if(cl[-1] == 0) {
