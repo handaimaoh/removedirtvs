@@ -1327,5 +1327,6 @@ int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFra
         show_motion(&rd->pp, destU, destV, destPitchUV);
     }
 
+    _mm_empty();
     return rd->pp.restored_blocks + rd->pp.mdd.distblocks + rd->pp.mdd.md.motionblocks;
 }
