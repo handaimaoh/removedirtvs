@@ -18,10 +18,17 @@ static void VS_CC RestoreMotionBlocksFree(void *instanceData, VSCore *core, cons
 {
     RestoreMotionBlocksData *d = (RestoreMotionBlocksData *)instanceData;
     vsapi->freeNode(d->input);
+
+    if (d->before != d->after) {
+        vsapi->freeNode(d->before);
+    }
+    if (d->after != d->restore) {
+        vsapi->freeNode(d->after);
+    }
+    if (d->alternative != d->restore) {
+        vsapi->freeNode(d->alternative);
+    }
     vsapi->freeNode(d->restore);
-    vsapi->freeNode(d->before);
-    vsapi->freeNode(d->after);
-    vsapi->freeNode(d->alternative);
     free(d);
 }
 
@@ -141,10 +148,16 @@ set_before:
         !isSameFormat(d.vi, vsapi->getVideoInfo(d.before)) ||
         !isSameFormat(d.vi, vsapi->getVideoInfo(d.after))) {
             vsapi->freeNode(d.input);
+            if (d.before != d.after) {
+                vsapi->freeNode(d.before);
+            }
+            if (d.after != d.restore) {
+                vsapi->freeNode(d.after);
+            }
+            if (d.alternative != d.restore) {
+                vsapi->freeNode(d.alternative);
+            }
             vsapi->freeNode(d.restore);
-            vsapi->freeNode(d.before);
-            vsapi->freeNode(d.after);
-            vsapi->freeNode(d.alternative);
             vsapi->setError(out, "SCSelect: Clips are not of equal type");
             return;
     }
