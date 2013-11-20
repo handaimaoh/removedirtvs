@@ -815,9 +815,9 @@ static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, cons
 
 static __forceinline int32_t horizontal_diff(const uint8_t *p, int32_t pitch)
 {
-    __m64 mm0 = *((__m64*)p);
-    mm0 = _mm_sad_pu8(mm0, *((__m64*)(p+pitch)));
-    return _mm_cvtsi64_si32(mm0);
+    __m128i xmm0 = *((__m128i*)p);
+    xmm0 = _mm_sad_epu8(xmm0, *((__m128i*)(p+pitch)));
+    return _mm_cvtsi128_si32(xmm0);
 }
 
 static void postprocessing_grey(PostProcessingData *pp, uint8_t *dp, int32_t dpitch, const uint8_t *sp, int32_t spitch)
