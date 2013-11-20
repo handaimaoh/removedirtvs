@@ -1300,7 +1300,7 @@ void FillRemoveDirt(RemoveDirtData *rd, const VSMap *in, VSMap *out, const VSAPI
     FillPostProcessing(&rd->pp, in, out, vsapi, vi);
 }
 
-int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, int32_t frame, const VSAPI *vsapi, const VSVideoInfo *vi)
+int32_t RemoveDirtProcessFrame(RemoveDirtData *rd, VSFrameRef *dest, const VSFrameRef *src, const VSFrameRef *previous, const VSFrameRef *next, const VSAPI *vsapi, const VSVideoInfo *vi)
 {
     const uint8_t *nextY = vsapi->getReadPtr(next, 0);
     int32_t nextPitchY = vsapi->getStride(next, 0);

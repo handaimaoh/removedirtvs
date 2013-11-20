@@ -51,7 +51,7 @@ static const VSFrameRef *VS_CC RestoreMotionBlocksGetFrame(int32_t n, int32_t ac
 
         VSFrameRef *dest_frame = vsapi->copyFrame(src_frame, core);
 
-        if(RemoveDirtProcessFrame(&d->rd, dest_frame, restore_frame, prev_frame, next_frame, n, vsapi, d->vi) > d->mthreshold) {
+        if(RemoveDirtProcessFrame(&d->rd, dest_frame, restore_frame, prev_frame, next_frame, vsapi, d->vi) > d->mthreshold) {
             vsapi->freeFrame(src_frame);
             vsapi->freeFrame(prev_frame);
             vsapi->freeFrame(restore_frame);
@@ -115,7 +115,7 @@ void VS_CC RestoreMotionBlocksCreate(const VSMap *in, VSMap *out, void *userData
         d.alternative = 0;
     }
 
-    d.mthreshold = (int32_t) vsapi->propGetInt(in, "gmthreshold", 0, &err);
+    d.mthreshold = int64ToIntS(vsapi->propGetInt(in, "gmthreshold", 0, &err));
     if (err) {
         d.mthreshold = 80;
     }

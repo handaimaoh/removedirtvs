@@ -38,7 +38,7 @@ static const VSFrameRef *VS_CC DupBlocksGetFrame(int32_t n, int32_t activationRe
             copyChroma(d->lf, restore_frame, d->vi, vsapi);
         }
 
-        if(RemoveDirtProcessFrame(&d->rd, d->lf, restore_frame, d->lf, restore_frame, n, vsapi, d->vi) > d->mthreshold) {
+        if(RemoveDirtProcessFrame(&d->rd, d->lf, restore_frame, d->lf, restore_frame, vsapi, d->vi) > d->mthreshold) {
             return restore_frame;
         }
 
@@ -74,7 +74,7 @@ void VS_CC DupBlocksCreate(const VSMap *in, VSMap *out, void *userData, VSCore *
     d.lfnr = -2;
 
     int32_t err;
-    d.mthreshold = (int32_t) vsapi->propGetInt(in, "gmthreshold", 0, &err);
+    d.mthreshold = int64ToIntS(vsapi->propGetInt(in, "gmthreshold", 0, &err));
     if (err) {
         d.mthreshold = 80;
     }

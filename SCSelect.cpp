@@ -65,7 +65,7 @@ set_end:
 
             int32_t olddiff = d->lastdiff;
             const VSFrameRef *next_frame = vsapi->getFrameFilter(n + 1, d->input, frameCtx);
-            d->lastdiff  = gdiff(vsapi->getReadPtr(src_frame, 0), vsapi->getStride(src_frame, 0),
+            d->lastdiff = gdiff(vsapi->getReadPtr(src_frame, 0), vsapi->getStride(src_frame, 0),
                 vsapi->getReadPtr(next_frame, 0), vsapi->getStride(next_frame, 0),
                 d->hblocks, d->incpitch, d->vi->height);
             d->lnr = n;
