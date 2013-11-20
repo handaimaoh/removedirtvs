@@ -776,41 +776,41 @@ static __forceinline int32_t vertical_diff(const uint8_t *p, int32_t pitch, cons
     int32_t pitchx2 = pitch + pitch;
     int32_t pitchx3 = pitchx2 + pitch;
     int32_t pitchx4 = pitchx3 + pitch;
-    __m64 mm7 = *((__m64*)noiselevel);
+    __m128i xmm7 = _mm_loadu_si128((__m128i*)noiselevel);
 
-    __m64 mm0, mm1;
-    mm0 = _mm_insert_pi16(mm0, *((int32_t*)p), 0);
-    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(p+pitchx2)), 1);
-    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitch)), 0);
-    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitchx3)), 1);
+    __m128i xmm0, xmm1;
+    xmm0 = _mm_insert_epi16(xmm0, *((int32_t*)p), 0);
+    xmm0 = _mm_insert_epi16(xmm0, *((int32_t*)(p+pitchx2)), 1);
+    xmm1 = _mm_insert_epi16(xmm1, *((int32_t*)(p+pitch)), 0);
+    xmm1 = _mm_insert_epi16(xmm1, *((int32_t*)(p+pitchx3)), 1);
 
-    mm7 = _mm_cmpeq_pi8(mm7, mm7);
+    xmm7 = _mm_cmpeq_epi8(xmm7, xmm7);
     
     p += pitchx4;
 
-    mm0 = _mm_insert_pi16(mm0, *((int32_t*)p), 2);
-    mm0 = _mm_insert_pi16(mm0, *((int32_t*)(p+pitchx2)), 3);
-    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitch)), 2);
-    mm1 = _mm_insert_pi16(mm1, *((int32_t*)(p+pitchx3)), 3);
+    xmm0 = _mm_insert_epi16(xmm0, *((int32_t*)p), 2);
+    xmm0 = _mm_insert_epi16(xmm0, *((int32_t*)(p+pitchx2)), 3);
+    xmm1 = _mm_insert_epi16(xmm1, *((int32_t*)(p+pitch)), 2);
+    xmm1 = _mm_insert_epi16(xmm1, *((int32_t*)(p+pitchx3)), 3);
 
-    __m64 mm2 = mm0;
-    __m64 mm3 = mm1;
+    __m128i xmm2 = xmm0;
+    __m128i xmm3 = xmm1;
 
-    mm7 = _mm_srli_pi16(mm7, 8);
+    xmm7 = _mm_srli_epi16(xmm7, 8);
 
-    mm0 = _mm_and_si64(mm0, mm7);
+    xmm0 = _mm_and_si128(xmm0, xmm7);
 
-    mm1 = _mm_slli_pi16(mm1, 8);
-    mm2 = _mm_srli_pi16(mm2, 8);
+    xmm1 = _mm_slli_epi16(xmm1, 8);
+    xmm2 = _mm_srli_epi16(xmm2, 8);
 
-    mm3 = _mm_subs_pu8(mm3, mm7);
+    xmm3 = _mm_subs_epu8(xmm3, xmm7);
 
-    mm0 = _mm_or_si64(mm0, mm1);
-    mm2 = _mm_or_si64(mm2, mm3);
+    xmm0 = _mm_or_si128(xmm0, xmm1);
+    xmm2 = _mm_or_si128(xmm2, xmm3);
 
-    mm0 = _mm_sad_pu8(mm0, mm2);
+    xmm0 = _mm_sad_epu8(xmm0, xmm2);
 
-    return _mm_cvtsi64_si32(mm0);
+    return _mm_cvtsi128_si32(xmm0);
 }
 
 static __forceinline int32_t horizontal_diff(const uint8_t *p, int32_t pitch)
