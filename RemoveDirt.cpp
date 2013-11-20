@@ -339,44 +339,44 @@ static __forceinline uint32_t SADcompare(const uint8_t *p1, int32_t pitch1, cons
     int32_t pitch2x3 = pitch2x2 + pitch2;
     int32_t pitch2x4 = pitch2x3 + pitch2;
 
-    __m64 mm0 = *((__m64*)p1);
-    __m64 mm1 = *((__m64*)(p1+pitch1));
+    __m128i xmm0 = _mm_loadl_epi64((__m128i*)p1);
+    __m128i xmm1 = _mm_loadl_epi64((__m128i*)(p1+pitch1));
 
-    mm0 = _mm_sad_pu8(mm0, *((__m64*)p2));
-    mm1 = _mm_sad_pu8(mm1, *((__m64*)(p2+pitch2)));
+    xmm0 = _mm_sad_epu8(xmm0, *((__m128i*)p2));
+    xmm1 = _mm_sad_epu8(xmm1, *((__m128i*)(p2+pitch2)));
 
-    __m64 mm2 = *((__m64*)(p1+pitch1x2));
-    __m64 mm3 = *((__m64*)(p1+pitch1x3));
+    __m128i xmm2 = _mm_loadl_epi64((__m128i*)(p1+pitch1x2));
+    __m128i xmm3 = _mm_loadl_epi64((__m128i*)(p1+pitch1x3));
 
-    mm2 = _mm_sad_pu8(mm2, *((__m64*)(p2+pitch2x2)));
-    mm3 = _mm_sad_pu8(mm3, *((__m64*)(p2+pitch2x3)));
+    xmm2 = _mm_sad_epu8(xmm2, *((__m128i*)(p2+pitch2x2)));
+    xmm3 = _mm_sad_epu8(xmm3, *((__m128i*)(p2+pitch2x3)));
 
-    mm0 = _mm_add_pi32(mm0, mm2);
-    mm1 = _mm_add_pi32(mm1, mm3);
+    xmm0 = _mm_add_epi32(xmm0, xmm2);
+    xmm1 = _mm_add_epi32(xmm1, xmm3);
 
     p1 += pitch1x4;
     p2 += pitch2x4;
 
-    mm2 = *((__m64*)p1);
-    mm3 = *((__m64*)(p1+pitch1));
+    xmm2 = _mm_loadl_epi64((__m128i*)p1);
+    xmm3 = _mm_loadl_epi64((__m128i*)(p1+pitch1));
 
-    mm2 = _mm_add_pi16(mm2, *((__m64*)p2));
-    mm3 = _mm_add_pi16(mm3, *((__m64*)(p2+pitch2)));
+    xmm2 = _mm_add_epi16(xmm2, *((__m128i*)p2));
+    xmm3 = _mm_add_epi16(xmm3, *((__m128i*)(p2+pitch2)));
 
-    mm0 = _mm_add_pi32(mm0, mm2);
-    mm1 = _mm_add_pi32(mm1, mm3);
+    xmm0 = _mm_add_epi32(xmm0, xmm2);
+    xmm1 = _mm_add_epi32(xmm1, xmm3);
 
-    mm2 = *((__m64*)(p1+pitch1x2));
-    mm3 = *((__m64*)(p1+pitch1x3));
+    xmm2 = _mm_loadl_epi64((__m128i*)(p1+pitch1x2));
+    xmm3 = _mm_loadl_epi64((__m128i*)(p1+pitch1x3));
 
-    mm2 = _mm_add_pi16(mm2, *((__m64*)(p2+pitch2x2)));
-    mm3 = _mm_add_pi16(mm3, *((__m64*)(p2+pitch2x3)));
+    xmm2 = _mm_add_epi16(xmm2, *((__m128i*)(p2+pitch2x2)));
+    xmm3 = _mm_add_epi16(xmm3, *((__m128i*)(p2+pitch2x3)));
 
-    mm0 = _mm_add_pi32(mm0, mm2);
-    mm1 = _mm_add_pi32(mm1, mm3);
-    mm0 = _mm_add_pi32(mm0, mm1);
+    xmm0 = _mm_add_epi32(xmm0, xmm2);
+    xmm1 = _mm_add_epi32(xmm1, xmm3);
+    xmm0 = _mm_add_epi32(xmm0, xmm1);
 
-    return (uint32_t)_mm_cvtsi64_si32(mm0);
+    return (uint32_t)_mm_cvtsi128_si32(xmm0);
 }
 
 static __forceinline uint32_t NSADcompare(const uint8_t *p1, int32_t pitch1, const uint8_t *p2, int32_t pitch2, const uint8_t *noiselevel)
