@@ -893,15 +893,15 @@ static void postprocessing_grey(PostProcessingData *pp, uint8_t *dp, int32_t dpi
 
 static __forceinline int32_t horizontal_diff_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch)
 {
-    __m64 mm0 = *((__m64*)u);
-    __m64 mm1 = _mm_cvtsi32_si64(*((int32_t*)(u+pitch)));
+    __m128i xmm0 = *((__m128i*)u);
+    __m128i xmm1 = _mm_cvtsi32_si128(*((int32_t*)(u+pitch)));
 
-    mm0 = _mm_unpacklo_pi32(mm0, *((__m64*)v));
-    mm1 = _mm_unpacklo_pi32(mm1, *((__m64*)(v+pitch)));
+    xmm0 = _mm_unpacklo_epi32(xmm0, *((__m128i*)v));
+    xmm1 = _mm_unpacklo_epi32(xmm1, *((__m128i*)(v+pitch)));
 
-    mm0 = _mm_sad_pu8(mm0, mm1);
+    xmm0 = _mm_sad_epu8(xmm0, xmm1);
 
-    return _mm_cvtsi64_si32(mm0);
+    return _mm_cvtsi128_si32(xmm0);
 }
 
 static __forceinline int32_t vertical_diff_yv12_chroma(const uint8_t *u, const uint8_t *v, int32_t pitch, const uint8_t *noiselevel)
